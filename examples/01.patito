@@ -1,0 +1,10 @@
+programa uno ;
+vars 
+v_1, v_2 : entero;
+v_3 : flotante;
+
+inicio
+{
+    v_1 = 5 + 10;
+}
+fin
