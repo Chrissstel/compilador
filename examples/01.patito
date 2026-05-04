@@ -1,10 +1,12 @@
 programa uno ;
 vars 
-v_1, v_2 : entero;
+v_1, v_2 , 3hola.2: entero; //comentario
 v_3 : flotante;
+
 
 inicio
 {
     v_1 = 5 + 10;
+    escribe("Hello World!");
 }
 fin

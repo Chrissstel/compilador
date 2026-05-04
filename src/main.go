@@ -7,7 +7,7 @@ import (
 
 func main() {
 	//lee el archivo a un slice de bytes y un error
-	bytes, _ := os.ReadFile("./examples/01.patito")
+	bytes, _ := os.ReadFile("./examples/00.patito")
 	source := string(bytes)
 
 	tokens := lexer.Tokenize(source)

@@ -95,6 +95,9 @@ func createLexer(source string) *lexer {
 			{regexp.MustCompile(`,`), defaultHandler(COMA, ",")},
 			{regexp.MustCompile(`:`), defaultHandler(DOS_PUNTOS, ":")},
 
+			//Comentarios
+			{regexp.MustCompile(`\/\/.*`), skipHandler()},
+
 			//Operadores
 			{regexp.MustCompile(`=`), defaultHandler(ASIGNACION, "=")},
 			{regexp.MustCompile(`\+`), defaultHandler(MAS, "+")},
@@ -145,6 +148,7 @@ func numberHandler(kind TokenKind) regexHandler {
 	}
 }
 
+// en un futuro le puedo quitar las ""
 func stringHandler() regexHandler {
 	return func(lex *lexer, regex *regexp.Regexp) {
 		match := regex.FindString(lex.remainder())
