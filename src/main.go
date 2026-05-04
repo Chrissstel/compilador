@@ -2,18 +2,28 @@ package main
 
 import (
 	"compilador/src/lexer"
+	"compilador/src/parser"
+	"fmt"
 	"os"
 )
 
 func main() {
 	//lee el archivo a un slice de bytes y un error
-	bytes, _ := os.ReadFile("./examples/00.patito")
-	source := string(bytes)
+	src, err := os.ReadFile("./examples/01.patito")
+	if err != nil {
+		panic(err)
+	}
 
-	tokens := lexer.Tokenize(source)
+	tokens := lexer.Tokenize(string(src))
 
+	//para ver todos los tokens
 	for _, token := range tokens {
 		token.Debug()
 	}
+
+	p := parser.New(tokens)
+	programa := p.ParsePrograma()
+
+	fmt.Printf("\nPrograma '%s' parseado\n", programa.ID)
 
 }

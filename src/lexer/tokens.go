@@ -13,15 +13,15 @@ const (
 	LETRERO //=string
 
 	//Constantes
-	ENTERO
-	FLOTANTE
+	CTE_ENTERO
+	CTE_FLOTANTE
 
 	//Palabras reservadas
 	P_PROGRAMA
 	P_INICIO
 	P_FIN
 	P_VARS
-	P_FUNCS
+	//P_FUNCS
 	P_ENTERO
 	P_FLOTANTE
 	P_MIENTRAS
@@ -37,6 +37,7 @@ const (
 	MENOS
 	DIVISION
 	MULTIPLICACION
+
 	MAYOR_QUE
 	MENOR_QUE
 	IGUAL
@@ -45,8 +46,10 @@ const (
 	//Delimitadores
 	ABRE_PAREN
 	CIERRA_PAREN
-	ABRE_CORCH
-	CIERRA_CORCH
+	ABRE_LLAVE
+	CIERRA_LLAVE
+	ABRE_CORCHETE
+	CIERRA_CORCHETE
 	SEMICOLON
 	COMA
 	DOS_PUNTOS
@@ -78,75 +81,77 @@ func TokenKindString(kind TokenKind) string {
 		return "letrero"
 
 	// Constantes
-	case ENTERO:
-		return "entero"
-	case FLOTANTE:
-		return "flotante"
+	case CTE_ENTERO:
+		return "cte_entero"
+	case CTE_FLOTANTE:
+		return "cte_flotante"
 
 	// Palabras reservadas
 	case P_PROGRAMA:
-		return "p_programa"
+		return "programa"
 	case P_INICIO:
-		return "p_inicio"
+		return "inicio"
 	case P_FIN:
-		return "p_fin"
+		return "fin"
 	case P_VARS:
-		return "p_vars"
-	case P_FUNCS:
-		return "p_funcs"
+		return "vars"
 	case P_ENTERO:
-		return "p_entero"
+		return "entero"
 	case P_FLOTANTE:
-		return "p_flotante"
+		return "flotante"
 	case P_MIENTRAS:
-		return "p_mientras"
+		return "mientras"
 	case P_HAZ:
-		return "p_haz"
+		return "haz"
 	case P_SI:
-		return "p_si"
+		return "si"
 	case P_SINO:
-		return "p_sino"
+		return "sino"
 	case P_ESCRIBE:
-		return "p_escribe"
+		return "escribe"
 	case P_NULA:
-		return "p_nula"
+		return "nula"
 
 	// Operadores
-	case ASIGNACION:
-		return "asignacion"
-	case MAS:
-		return "mas"
-	case MENOS:
-		return "menos"
-	case DIVISION:
-		return "division"
-	case MULTIPLICACION:
-		return "multiplicacion"
 	case MAYOR_QUE:
-		return "mayor_que"
+		return ">"
 	case MENOR_QUE:
-		return "menor_que"
+		return "<"
 	case IGUAL:
-		return "igual"
+		return "=="
 	case DIFERENTE:
-		return "diferente"
+		return "!="
+
+	case ASIGNACION:
+		return "="
+	case MAS:
+		return "+"
+	case MENOS:
+		return "-"
+	case DIVISION:
+		return "/"
+	case MULTIPLICACION:
+		return "*"
 
 	// Delimitadores
 	case ABRE_PAREN:
-		return "abre_paren"
+		return "("
 	case CIERRA_PAREN:
-		return "cierra_paren"
-	case ABRE_CORCH:
-		return "abre_corch"
-	case CIERRA_CORCH:
-		return "cierra_corch"
+		return ")"
+	case ABRE_LLAVE:
+		return "{"
+	case CIERRA_LLAVE:
+		return "}"
+	case ABRE_CORCHETE:
+		return "["
+	case CIERRA_CORCHETE:
+		return "]"
 	case SEMICOLON:
-		return "semicolon"
+		return ";"
 	case COMA:
-		return "coma"
+		return ","
 	case DOS_PUNTOS:
-		return "dos_puntos"
-
+		return ":"
 	default:
 		return "desconocido"
 	}

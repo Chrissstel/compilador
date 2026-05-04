@@ -1,6 +1,6 @@
 programa uno ;
 vars 
-v_1, v_2 , 3hola.2: entero; //comentario
+v_1, v_2 : entero; //comentario
 v_3 : flotante;
 
 

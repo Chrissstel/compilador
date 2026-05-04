@@ -86,19 +86,24 @@ func createLexer(source string) *lexer {
 		Tokens: make([]Token, 0),
 		patterns: []regexPattern{
 
-			//Delimitadores
+			// Espacios y comentarios (skip)
+			{regexp.MustCompile(`\s+`), skipHandler()},
+			{regexp.MustCompile(`\/\/.*`), skipHandler()},
+
+			// Delimitadores
 			{regexp.MustCompile(`\(`), defaultHandler(ABRE_PAREN, "(")},
 			{regexp.MustCompile(`\)`), defaultHandler(CIERRA_PAREN, ")")},
-			{regexp.MustCompile(`\{`), defaultHandler(ABRE_CORCH, "{")},
-			{regexp.MustCompile(`\}`), defaultHandler(CIERRA_CORCH, "}")},
+			{regexp.MustCompile(`\{`), defaultHandler(ABRE_LLAVE, "{")},
+			{regexp.MustCompile(`\}`), defaultHandler(CIERRA_LLAVE, "}")},
+			{regexp.MustCompile(`\[`), defaultHandler(ABRE_CORCHETE, "[")},
+			{regexp.MustCompile(`\]`), defaultHandler(CIERRA_CORCHETE, "]")},
 			{regexp.MustCompile(`;`), defaultHandler(SEMICOLON, ";")},
 			{regexp.MustCompile(`,`), defaultHandler(COMA, ",")},
 			{regexp.MustCompile(`:`), defaultHandler(DOS_PUNTOS, ":")},
 
-			//Comentarios
-			{regexp.MustCompile(`\/\/.*`), skipHandler()},
-
-			//Operadores
+			// Operadores
+			{regexp.MustCompile(`==`), defaultHandler(IGUAL, "==")},
+			{regexp.MustCompile(`!=`), defaultHandler(DIFERENTE, "!=")},
 			{regexp.MustCompile(`=`), defaultHandler(ASIGNACION, "=")},
 			{regexp.MustCompile(`\+`), defaultHandler(MAS, "+")},
 			{regexp.MustCompile(`-`), defaultHandler(MENOS, "-")},
@@ -106,15 +111,12 @@ func createLexer(source string) *lexer {
 			{regexp.MustCompile(`\*`), defaultHandler(MULTIPLICACION, "*")},
 			{regexp.MustCompile(`>`), defaultHandler(MAYOR_QUE, ">")},
 			{regexp.MustCompile(`<`), defaultHandler(MENOR_QUE, "<")},
-			{regexp.MustCompile(`==`), defaultHandler(IGUAL, "==")},
-			{regexp.MustCompile(`!=`), defaultHandler(DIFERENTE, "!=")},
 
-			//Palabras reservadas
+			// Palabras reservadas
 			{regexp.MustCompile(`\bprograma\b`), defaultHandler(P_PROGRAMA, "programa")},
 			{regexp.MustCompile(`\binicio\b`), defaultHandler(P_INICIO, "inicio")},
 			{regexp.MustCompile(`\bfin\b`), defaultHandler(P_FIN, "fin")},
 			{regexp.MustCompile(`\bvars\b`), defaultHandler(P_VARS, "vars")},
-			{regexp.MustCompile(`\bfuncs\b`), defaultHandler(P_FUNCS, "funcs")},
 			{regexp.MustCompile(`\bentero\b`), defaultHandler(P_ENTERO, "entero")},
 			{regexp.MustCompile(`\bflotante\b`), defaultHandler(P_FLOTANTE, "flotante")},
 			{regexp.MustCompile(`\bmientras\b`), defaultHandler(P_MIENTRAS, "mientras")},
@@ -124,18 +126,15 @@ func createLexer(source string) *lexer {
 			{regexp.MustCompile(`\bescribe\b`), defaultHandler(P_ESCRIBE, "escribe")},
 			{regexp.MustCompile(`\bnula\b`), defaultHandler(P_NULA, "nula")},
 
-			//Constantes
-			{regexp.MustCompile(`\d+\.\d+`), numberHandler(FLOTANTE)},
-			{regexp.MustCompile(`\d+`), numberHandler(ENTERO)},
+			// Constantes numéricas
+			{regexp.MustCompile(`\d+\.\d+`), numberHandler(CTE_FLOTANTE)},
+			{regexp.MustCompile(`\d+`), numberHandler(CTE_ENTERO)},
 
-			//Letrero
+			// Letrero
 			{regexp.MustCompile(`"[^"]*"`), stringHandler()},
 
-			//Identificadores
+			// Identificadores
 			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), identifierHandler()},
-
-			//Espacios
-			{regexp.MustCompile(`\s+`), skipHandler()},
 		},
 	}
 }
