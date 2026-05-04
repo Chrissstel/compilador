@@ -25,5 +25,6 @@ func main() {
 	programa := p.ParsePrograma()
 
 	fmt.Printf("\nPrograma '%s' parseado\n", programa.ID)
+	programa.Print()
 
 }

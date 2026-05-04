@@ -114,44 +114,44 @@ func TokenKindString(kind TokenKind) string {
 
 	// Operadores
 	case MAYOR_QUE:
-		return ">"
+		return "mayor que"
 	case MENOR_QUE:
-		return "<"
+		return "menor que"
 	case IGUAL:
-		return "=="
+		return "igual que"
 	case DIFERENTE:
-		return "!="
+		return "diferente de"
 
 	case ASIGNACION:
-		return "="
+		return "asignación"
 	case MAS:
-		return "+"
+		return "mas"
 	case MENOS:
-		return "-"
+		return "menos"
 	case DIVISION:
-		return "/"
+		return "division"
 	case MULTIPLICACION:
-		return "*"
+		return "multiplicación"
 
 	// Delimitadores
 	case ABRE_PAREN:
-		return "("
+		return "abre_paren"
 	case CIERRA_PAREN:
-		return ")"
+		return "cierra_paren"
 	case ABRE_LLAVE:
-		return "{"
+		return "abre_llave"
 	case CIERRA_LLAVE:
-		return "}"
+		return "cierra_llave"
 	case ABRE_CORCHETE:
-		return "["
+		return "abre_corch"
 	case CIERRA_CORCHETE:
-		return "]"
+		return "cierra_corch"
 	case SEMICOLON:
-		return ";"
+		return "semicolon"
 	case COMA:
-		return ","
+		return "coma"
 	case DOS_PUNTOS:
-		return ":"
+		return "dos puntos"
 	default:
 		return "desconocido"
 	}

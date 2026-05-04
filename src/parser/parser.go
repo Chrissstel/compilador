@@ -8,8 +8,6 @@ import (
 )
 
 type Parser struct {
-	//Aqui voy a manejar los errores
-	// errors []error
 	tokens []lexer.Token
 	pos    int
 }
@@ -80,53 +78,36 @@ func (p *Parser) ParsePrograma() *ast.Programa {
 // <V> → <VARS> | ε
 func (p *Parser) parseV() *ast.Vars {
 	if p.check(lexer.P_VARS) {
-		return p.parseV()
+		return p.parseVars()
 	}
 	return nil
 }
 
-// <VARS> → vars <LOOP_VARS>
+// <VARS> → vars (<LOOP_ID> : <TIPO> ;)+
 func (p *Parser) parseVars() *ast.Vars {
 	p.expect(lexer.P_VARS)
-	decls := p.parseLoopVars()
+	var decls []*ast.DeclaracionVar
+
+	for p.check(lexer.IDENTIFICADOR) {
+		ids := p.parseLoopID()
+		p.expect(lexer.DOS_PUNTOS)
+		tipo := p.parseTipo()
+		p.expect(lexer.SEMICOLON)
+		decls = append(decls, &ast.DeclaracionVar{IDs: ids, Tipo: tipo})
+	}
 	return &ast.Vars{Declaraciones: decls}
 }
 
-// <LOOP_VARS> → <LOOP_ID> : <TIPO> ; <L>
-func (p *Parser) parseLoopVars() []*ast.DeclaracionVar {
-	ids := p.parseLoopID()
-	p.expect(lexer.DOS_PUNTOS)
-	tipo := p.parseTipo()
-	p.expect(lexer.SEMICOLON)
-
-	decl := &ast.DeclaracionVar{IDs: ids, Tipo: tipo}
-	resto := p.parseL()
-	return append([]*ast.DeclaracionVar{decl}, resto...)
-}
-
-// <L> → <LOOP_VARS> | ε
-// FIRST(<LOOP_VARS>) = {id}
-func (p *Parser) parseL() []*ast.DeclaracionVar {
-	if p.check(lexer.IDENTIFICADOR) {
-		return p.parseLoopVars()
-	}
-	return nil
-}
-
-// <LOOP_ID> → id <I>
+// id (, id)*
 func (p *Parser) parseLoopID() []string {
-	id := p.expect(lexer.IDENTIFICADOR).Value
-	resto := p.parseI()
-	return append([]string{id}, resto...)
-}
+	var ids []string
+	ids = append(ids, p.expect(lexer.IDENTIFICADOR).Value)
 
-// <I> → , <LOOP_ID> | ε
-func (p *Parser) parseI() []string {
-	if p.check(lexer.COMA) {
+	for p.check(lexer.COMA) {
 		p.advance()
-		return p.parseLoopID()
+		ids = append(ids, p.expect(lexer.IDENTIFICADOR).Value)
 	}
-	return nil
+	return ids
 }
 
 // <TIPO> → entero | flotante
@@ -143,14 +124,13 @@ func (p *Parser) parseTipo() string {
 
 //PARA FUNCIONES
 
-// <F> → <FUNCS> <F> | ε
+// <F> → <FUNCS>*
 func (p *Parser) parseF() []*ast.Func {
-	if p.esInicioFunc() {
-		f := p.parseFuncs()
-		resto := p.parseF()
-		return append([]*ast.Func{f}, resto...)
+	var funcs []*ast.Func
+	for p.esInicioFunc() {
+		funcs = append(funcs, p.parseFuncs())
 	}
-	return nil
+	return funcs
 }
 
 func (p *Parser) esInicioFunc() bool {
@@ -158,15 +138,15 @@ func (p *Parser) esInicioFunc() bool {
 	return k == lexer.P_NULA || k == lexer.P_ENTERO || k == lexer.P_FLOTANTE
 }
 
-// <FUNCS> → <DEF_FUNC> id ( <ID_FUNC> ) { <VARS_FUNC> <CUERPO> } ;
+// <FUNCS> → <DEF_FUNC> id ( (<PARAM> (, <PARAM>)*)? ) { <VARS>? <CUERPO> } ;
 func (p *Parser) parseFuncs() *ast.Func {
 	tipoRet := p.parseDefFunc()
 	id := p.expect(lexer.IDENTIFICADOR).Value
 	p.expect(lexer.ABRE_PAREN)
-	params := p.parseIDFunc()
+	params := p.parseParams()
 	p.expect(lexer.CIERRA_PAREN)
 	p.expect(lexer.ABRE_LLAVE)
-	vars := p.parseVarsFunc()
+	vars := p.parseV()
 	cuerpo := p.parseCuerpo()
 	p.expect(lexer.CIERRA_LLAVE)
 	p.expect(lexer.SEMICOLON)
@@ -180,7 +160,7 @@ func (p *Parser) parseFuncs() *ast.Func {
 	}
 }
 
-// <DEF_FUNC> → nula | <TIPO>
+// <DEF_FUNC> → nula | entero | flotante
 func (p *Parser) parseDefFunc() string {
 	if p.check(lexer.P_NULA) {
 		p.advance()
@@ -190,58 +170,40 @@ func (p *Parser) parseDefFunc() string {
 }
 
 // <ID_FUNC> → <LOOP_FUNC> | ε
-func (p *Parser) parseIDFunc() []*ast.Param {
-	if p.check(lexer.IDENTIFICADOR) {
-		return p.parseLoopFunc()
+func (p *Parser) parseParams() []*ast.Param {
+	var params []*ast.Param
+	if !p.check(lexer.IDENTIFICADOR) {
+		return params
 	}
-	return nil
+	params = append(params, p.parseParam())
+
+	for p.check(lexer.COMA) {
+		p.advance()
+		params = append(params, p.parseParam())
+	}
+	return params
 }
 
-// <LOOP_FUNC> → id : <TIPO> <LF2>
-func (p *Parser) parseLoopFunc() []*ast.Param {
+// <PARAM> → id : <TIPO>
+func (p *Parser) parseParam() *ast.Param {
 	id := p.expect(lexer.IDENTIFICADOR).Value
 	p.expect(lexer.DOS_PUNTOS)
 	tipo := p.parseTipo()
-	param := &ast.Param{ID: id, Tipo: tipo}
-	resto := p.parseLF2()
-	return append([]*ast.Param{param}, resto...)
-}
-
-// <LF2> → , <LOOP_FUNC> | ε
-func (p *Parser) parseLF2() []*ast.Param {
-	if p.check(lexer.COMA) {
-		p.advance()
-		return p.parseLoopFunc()
-	}
-	return nil
-}
-
-// <VARS_FUNC> → <VARS> | ε
-func (p *Parser) parseVarsFunc() *ast.Vars {
-	if p.check(lexer.P_VARS) {
-		return p.parseVars()
-	}
-	return nil
+	return &ast.Param{ID: id, Tipo: tipo}
 }
 
 //PARA EL CUERPO
 
-// <CUERPO> → { <LOOP_CUERPO> }
+// <CUERPO> → { <ESTATUTO>* }
 func (p *Parser) parseCuerpo() *ast.Cuerpo {
 	p.expect(lexer.ABRE_LLAVE)
-	estatutos := p.parseLoopCuerpo()
+
+	var estatutos []ast.Estatuto
+	for p.esInicioEstatuto() {
+		estatutos = append(estatutos, p.parseEstatuto())
+	}
 	p.expect(lexer.CIERRA_LLAVE)
 	return &ast.Cuerpo{Estatutos: estatutos}
-}
-
-// <LOOP_CUERPO> → <ESTATUTO> <LOOP_CUERPO> | ε
-func (p *Parser) parseLoopCuerpo() []ast.Estatuto {
-	if p.esInicioEstatuto() {
-		e := p.parseEstatuto()
-		resto := p.parseLoopCuerpo()
-		return append([]ast.Estatuto{e}, resto...)
-	}
-	return nil
 }
 
 // FIRST(<ESTATUTO>) = {id, si, mientras, escribe, [}
@@ -279,7 +241,10 @@ func (p *Parser) parseEstatuto() ast.Estatuto {
 
 	case lexer.ABRE_CORCHETE:
 		p.advance()
-		estatutos := p.parseLoopEstatuto()
+		var estatutos []ast.Estatuto
+		for p.esInicioEstatuto() {
+			estatutos = append(estatutos, p.parseEstatuto())
+		}
 		p.expect(lexer.CIERRA_CORCHETE)
 		return &ast.BloqueEstatutos{Estatutos: estatutos}
 	}
@@ -287,16 +252,6 @@ func (p *Parser) parseEstatuto() ast.Estatuto {
 	panic(fmt.Sprintf(
 		"Parser::Error -> estatuto inesperado '%s'", p.current().Value,
 	))
-}
-
-// <LOOP_ESTATUTO> → <ESTATUTO> <LOOP_ESTATUTO> | ε
-func (p *Parser) parseLoopEstatuto() []ast.Estatuto {
-	if p.esInicioEstatuto() {
-		e := p.parseEstatuto()
-		resto := p.parseLoopEstatuto()
-		return append([]ast.Estatuto{e}, resto...)
-	}
-	return nil
 }
 
 // <ASIGNA> → id = <EXPRESION> ;
@@ -315,22 +270,19 @@ func (p *Parser) parseCondicion() *ast.Condicion {
 	expr := p.parseExpresion()
 	p.expect(lexer.CIERRA_PAREN)
 	cuerpoSi := p.parseCuerpo()
-	cuerpoSino := p.parseElse()
+
+	var cuerpoSino *ast.Cuerpo
+	if p.check(lexer.P_SINO) {
+		p.advance()
+		cuerpoSino = p.parseCuerpo()
+	}
+
 	p.expect(lexer.SEMICOLON)
 	return &ast.Condicion{
 		Expresion:  expr,
 		CuerpoSi:   cuerpoSi,
 		CuerpoSino: cuerpoSino,
 	}
-}
-
-// <ELSE> → sino <CUERPO> | ε
-func (p *Parser) parseElse() *ast.Cuerpo {
-	if p.check(lexer.P_SINO) {
-		p.advance()
-		return p.parseCuerpo()
-	}
-	return nil
 }
 
 // <CICLO> → mientras ( <EXPRESION> ) haz <CUERPO> ;
@@ -345,125 +297,91 @@ func (p *Parser) parseCiclo() *ast.Ciclo {
 	return &ast.Ciclo{Expresion: expr, Cuerpo: cuerpo}
 }
 
-// <LLAMADA> → id ( <AUX_LLAMADA> )
+// <LLAMADA> → id ( (<EXPRESION> (, <EXPRESION>)*)? )
 func (p *Parser) parseLlamada() *ast.Llamada {
 	id := p.expect(lexer.IDENTIFICADOR).Value
 	p.expect(lexer.ABRE_PAREN)
-	args := p.parseAuxLlamada()
+	var args []*ast.Expresion
+	if p.esInicioExpresion() {
+		args = append(args, p.parseExpresion())
+		for p.check(lexer.COMA) {
+			p.advance()
+			args = append(args, p.parseExpresion())
+		}
+	}
 	p.expect(lexer.CIERRA_PAREN)
 	return &ast.Llamada{ID: id, Args: args}
 }
 
-// <AUX_LLAMADA> → <EXPRESION> <LOOP_EXPRESION> | ε
-func (p *Parser) parseAuxLlamada() []*ast.Expresion {
-	if p.esInicioExpresion() {
-		e := p.parseExpresion()
-		resto := p.parseLoopExpresionArgs()
-		return append([]*ast.Expresion{e}, resto...)
-	}
-	return nil
-}
-
-// <LOOP_EXPRESION> → , <EXPRESION> <LOOP_EXPRESION> | ε
-func (p *Parser) parseLoopExpresionArgs() []*ast.Expresion {
-	if p.check(lexer.COMA) {
-		p.advance()
-		e := p.parseExpresion()
-		resto := p.parseLoopExpresionArgs()
-		return append([]*ast.Expresion{e}, resto...)
-	}
-	return nil
-}
-
-// <IMPRIME> → escribe ( <AUX_IMPRIME> ) ;
+// <IMPRIME> → escribe ( <ITEM> (, <ITEM>)* ) ;
 func (p *Parser) parseImprime() *ast.Imprime {
 	p.expect(lexer.P_ESCRIBE)
 	p.expect(lexer.ABRE_PAREN)
-	items := p.parseAuxImprime()
+
+	var items []ast.ImprimeItem
+	items = append(items, p.parseItem())
+	for p.check(lexer.COMA) {
+		p.advance()
+		items = append(items, p.parseItem())
+	}
+
 	p.expect(lexer.CIERRA_PAREN)
 	p.expect(lexer.SEMICOLON)
 	return &ast.Imprime{Items: items}
 }
 
-// <AUX_IMPRIME> → <EXPRESION> <LOOP_IMPRIME> | letrero <LOOP_IMPRIME>
-func (p *Parser) parseAuxImprime() []ast.ImprimeItem {
+// <ITEM> → <EXPRESION> | letrero
+func (p *Parser) parseItem() ast.ImprimeItem {
 	if p.check(lexer.LETRERO) {
-		val := p.advance().Value
-		item := ast.ImprimeItem{EsLetrero: true, Letrero: val}
-		resto := p.parseLoopImprime()
-		return append([]ast.ImprimeItem{item}, resto...)
+		return ast.ImprimeItem{EsLetrero: true, Letrero: p.advance().Value}
 	}
-	expr := p.parseExpresion()
-	item := ast.ImprimeItem{EsLetrero: false, Expr: expr}
-	resto := p.parseLoopImprime()
-	return append([]ast.ImprimeItem{item}, resto...)
-}
-
-// <LOOP_IMPRIME> → , <AUX_IMPRIME> | ε
-func (p *Parser) parseLoopImprime() []ast.ImprimeItem {
-	if p.check(lexer.COMA) {
-		p.advance()
-		return p.parseAuxImprime()
-	}
-	return nil
+	return ast.ImprimeItem{EsLetrero: false, Expr: p.parseExpresion()}
 }
 
 //PARA EXPRESIONES
 
-// <EXPRESION> → <EXP> <ELSE_EXPRESION>
+// <EXPRESION> → <EXP> (<COND> <EXP>)?
 func (p *Parser) parseExpresion() *ast.Expresion {
 	izq := p.parseExp()
-	op, der := p.parseElseExpresion()
+	var op string
+	var der *ast.Exp
+	switch p.current().Kind {
+	case lexer.MAYOR_QUE, lexer.MENOR_QUE, lexer.DIFERENTE, lexer.IGUAL:
+		op = p.advance().Value
+		der = p.parseExp()
+	}
 	return &ast.Expresion{Izq: izq, Op: op, Der: der}
 }
 
-// <ELSE_EXPRESION> → <COND> <EXP> | ε
-// <COND> → > | < | != | ==
-func (p *Parser) parseElseExpresion() (string, *ast.Exp) {
-	switch p.current().Kind {
-	case lexer.MAYOR_QUE, lexer.MENOR_QUE, lexer.DIFERENTE, lexer.IGUAL:
-		op := p.advance().Value
-		der := p.parseExp()
-		return op, der
-	}
-	return "", nil
-}
-
-// <EXP> → <TERMINO> <LOOP_EXP>
+// <EXP> → <TERMINO> ((+ | -) <TERMINO>)*
 func (p *Parser) parseExp() *ast.Exp {
-	term := p.parseTermino()
-	op, der := p.parseLoopExp()
-	return &ast.Exp{Termino: term, Op: op, Der: der}
-}
-
-// <LOOP_EXP> → + <EXP> | - <EXP> | ε
-func (p *Parser) parseLoopExp() (string, *ast.Exp) {
-	if p.check(lexer.MAS) || p.check(lexer.MENOS) {
+	raiz := &ast.Exp{Termino: p.parseTermino()}
+	actual := raiz
+	for p.check(lexer.MAS) || p.check(lexer.MENOS) {
 		op := p.advance().Value
-		der := p.parseExp()
-		return op, der
+		der := &ast.Exp{Termino: p.parseTermino()}
+		actual.Op = op
+		actual.Der = der
+		actual = der
 	}
-	return "", nil
+	return raiz
 }
 
-// <TERMINO> → <FACTOR> <LOOP_TERMINO>
+// <TERMINO> → <FACTOR> ((* | /) <FACTOR>)*
 func (p *Parser) parseTermino() *ast.Termino {
-	factor := p.parseFactor()
-	op, der := p.parseLoopTermino()
-	return &ast.Termino{Factor: factor, Op: op, Der: der}
-}
-
-// <LOOP_TERMINO> → * <TERMINO> | / <TERMINO> | ε
-func (p *Parser) parseLoopTermino() (string, *ast.Termino) {
-	if p.check(lexer.MULTIPLICACION) || p.check(lexer.DIVISION) {
+	raiz := &ast.Termino{Factor: p.parseFactor()}
+	actual := raiz
+	for p.check(lexer.MULTIPLICACION) || p.check(lexer.DIVISION) {
 		op := p.advance().Value
-		der := p.parseTermino()
-		return op, der
+		der := &ast.Termino{Factor: p.parseFactor()}
+		actual.Op = op
+		actual.Der = der
+		actual = der
 	}
-	return "", nil
+	return raiz
 }
 
-// <FACTOR> → ( <EXPRESION> ) | <LLAMADA> | <SIGNO> <VALOR>
+// <FACTOR> → ( <EXPRESION> ) | <LLAMADA> | (+ | -)? (id | cte_ent | cte_flot)
 func (p *Parser) parseFactor() *ast.Factor {
 	// ( <EXPRESION> )
 	if p.check(lexer.ABRE_PAREN) {
@@ -478,47 +396,39 @@ func (p *Parser) parseFactor() *ast.Factor {
 		return &ast.Factor{Llamada: p.parseLlamada()}
 	}
 
-	// <SIGNO> <VALOR>
-	signo := p.parseSigno()
-	valor := p.parseValor()
-	return &ast.Factor{Signo: signo, Valor: valor}
-}
-
-// <SIGNO> → + | - | ε
-func (p *Parser) parseSigno() string {
+	// (+ | -)? (id | cte_ent | cte_flot)
+	signo := ""
 	if p.check(lexer.MAS) || p.check(lexer.MENOS) {
-		return p.advance().Value
+		signo = p.advance().Value
 	}
-	return ""
+	return &ast.Factor{Signo: signo, Valor: p.parseValor()}
 }
 
-// <VALOR> → id | <CTE>
+// <VALOR> → id | cte_ent | cte_flot
 func (p *Parser) parseValor() *ast.Valor {
-	if p.check(lexer.IDENTIFICADOR) {
-		return &ast.Valor{ID: p.advance().Value}
-	}
-	return p.parseCte()
-}
-
-// <CTE> → cte_ent | cte_flot
-func (p *Parser) parseCte() *ast.Valor {
 	t := p.current()
 	switch t.Kind {
+	case lexer.IDENTIFICADOR:
+		p.advance()
+		return &ast.Valor{ID: t.Value}
+
 	case lexer.CTE_ENTERO:
 		p.advance()
 		v, _ := strconv.Atoi(t.Value)
 		return &ast.Valor{EsCte: true, CteEnt: &v}
+
 	case lexer.CTE_FLOTANTE:
 		p.advance()
 		v, _ := strconv.ParseFloat(t.Value, 64)
 		return &ast.Valor{EsCte: true, CteFlot: &v}
 	}
+
 	panic(fmt.Sprintf(
-		"Parser::Error -> se esperaba un valor (id, entero o flotante) pero encontré '%s'", t.Value,
+		"Parser::Error -> se esperaba id o constante pero se encontró '%s'", t.Value,
 	))
 }
 
-// FIRST(<EXPRESION>) = {(, id, +, -, cte_ent, cte_flot}
+// FIRST(<EXPRESION>) = { (, id, +, -, cte_ent, cte_flot }
 func (p *Parser) esInicioExpresion() bool {
 	switch p.current().Kind {
 	case lexer.ABRE_PAREN, lexer.IDENTIFICADOR,
