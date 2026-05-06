@@ -9,7 +9,7 @@ import (
 
 func main() {
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./examples/01.patito")
+	src, err := os.ReadFile("./testdata/01.patito")
 	if err != nil {
 		panic(err)
 	}

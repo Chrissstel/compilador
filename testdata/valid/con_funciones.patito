@@ -1,0 +1,24 @@
+programa funciones ;
+vars
+    resultado : entero;
+
+entero suma( a : entero, b : entero ) {
+    vars
+        temp : entero;
+    {
+        temp = a + b ;
+    }
+} ;
+
+nula imprimir( valor : entero ) {
+    {
+        escribe( valor ) ;
+    }
+} ;
+
+inicio
+{
+    resultado = suma( 10, 20 ) ;
+    imprimir( resultado ) ;
+}
+fin

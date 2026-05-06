@@ -1,0 +1,17 @@
+programa ciclos ;
+vars
+    i : entero;
+    suma : entero;
+
+inicio
+{
+    i = 0 ;
+    suma = 0 ;
+    mientras ( i != 10 ) haz
+    {
+        suma = suma + i ;
+        i = i + 1 ;
+    } ;
+    escribe( "resultado:", suma ) ;
+}
+fin

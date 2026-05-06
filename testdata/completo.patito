@@ -1,0 +1,45 @@
+programa completo ;
+vars
+    x : entero;
+    y : entero;
+    res : flotante;
+
+entero maximo( a : entero, b : entero ) {
+    {
+        si ( a > b )
+        {
+            a = a ;
+        }
+        sino
+        {
+            a = b ;
+        } ;
+    }
+} ;
+
+nula imprimirResultado( val : entero, msg : entero ) {
+    {
+        escribe( val ) ;
+    }
+} ;
+
+inicio
+{
+    x = 10 ;
+    y = 25 ;
+    res = maximo( x, y ) ;
+    mientras ( x != 0 ) haz
+    {
+        x = x - 1 ;
+        escribe( x ) ;
+    } ;
+    si ( res > 0 )
+    {
+        imprimirResultado( res, 0 ) ;
+    }
+    sino
+    {
+        escribe( "sin resultado" ) ;
+    } ;
+}
+fin

@@ -1,0 +1,9 @@
+programa basico ;
+vars
+    x : entero;
+inicio
+{
+    x = 10 + 5 ;
+    escribe( x ) ;
+}
+fin
