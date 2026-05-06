@@ -255,6 +255,27 @@ EXPRESION   →  relacionales (>, <, ==, !=)   — menor precedencia
 Esto garantiza que `2 + 3 * 4` se evalúe como `2 + (3 * 4)` y no `(2 + 3) * 4`.
  
 ---
+
+### Casos de prueba
+ 
+Se implementaron tests divididos en dos niveles: tests del lexer y tests del parser.
+Cómo correr los tests
+ 
+```bash
+#para correr todos los tests
+go test ./...
+
+#para correr solo los del lexer
+go test ./src/lexer/
+
+#para correr solo los del parser
+go test ./src/parser/
+
+```
+ 
+Para ver el detalle de cada test, se puede añadir la bandera “-v” y se va a imprimir el nombre y el resultado de cada caso. (Por ejemplo: “ go test ./... -v ”.
+ 
+---
  
 ## Estado actual del compilador
  
