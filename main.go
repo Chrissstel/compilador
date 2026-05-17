@@ -3,17 +3,19 @@ package main
 import (
 	"compilador/src/lexer"
 	"compilador/src/parser"
+	"compilador/src/semantic"
 	"fmt"
 	"os"
 )
 
 func main() {
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./testdata/01.patito")
+	src, err := os.ReadFile("./testdata/completo.patito") //o completo.patito
 	if err != nil {
 		panic(err)
 	}
 
+	//Léxico
 	tokens := lexer.Tokenize(string(src))
 
 	//para ver todos los tokens
@@ -21,10 +23,23 @@ func main() {
 		token.Debug()
 	}
 
+	//Sintáctico
 	p := parser.New(tokens)
 	programa := p.ParsePrograma()
-
 	fmt.Printf("\nPrograma '%s' parseado\n", programa.ID)
 	programa.Print()
+
+	//Semántico
+	analizador := semantic.NuevoAnalizador()
+	analizador.AnalizarPrograma(programa)
+
+	if analizador.HayErrores() {
+		fmt.Println("\n=== Errores semánticos ===")
+		analizador.ImprimirErrores()
+		os.Exit(1)
+	}
+
+	fmt.Println("\nAnálisis semántico correcto")
+	analizador.ImprimirTabla()
 
 }

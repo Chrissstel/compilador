@@ -23,11 +23,18 @@ type EntradaFunc struct {
 	Parametros  []EntradaVar
 }
 
+//snapshot con nombre para guardarlo en el historial
+type scopeGuardado struct {
+	nombre    string
+	variables map[string]EntradaVar
+}
+
 // TABLA
 type TablaSimbolos struct {
 	variables   map[string]EntradaVar  //del scope actual
 	funciones   map[string]EntradaFunc //siempre global
 	scopeActual string                 //"global" o nombre de la función
+	historial   []scopeGuardado        //para guardar los scopes que se cierran
 }
 
 func NuevaTabla() *TablaSimbolos {
@@ -35,6 +42,7 @@ func NuevaTabla() *TablaSimbolos {
 		variables:   make(map[string]EntradaVar),
 		funciones:   make(map[string]EntradaFunc),
 		scopeActual: "global",
+		historial:   make([]scopeGuardado, 0),
 	}
 }
 
@@ -90,6 +98,16 @@ func (t *TablaSimbolos) EntrarScope(nombreFunc string, params []EntradaVar) map[
 
 //para restaurar el scope anterior
 func (t *TablaSimbolos) SalirScope(snapshot map[string]EntradaVar) {
+	//guarda el scope local en el historial antes de cerrarlo
+	copia := make(map[string]EntradaVar)
+	for k, v := range t.variables {
+		copia[k] = v
+	}
+	t.historial = append(t.historial, scopeGuardado{
+		nombre:    t.scopeActual,
+		variables: copia,
+	})
+
 	t.variables = snapshot
 	t.scopeActual = "global"
 }
@@ -97,9 +115,9 @@ func (t *TablaSimbolos) SalirScope(snapshot map[string]EntradaVar) {
 //DEBUG
 
 func (t *TablaSimbolos) Imprimir() {
-	fmt.Printf("\n=== Tabla de Símbolos (scope: %s) ===\n", t.scopeActual)
+	fmt.Printf("\n=== Tabla de Símbolos ===\n")
 
-	fmt.Println("Funciones:")
+	fmt.Println("────── Funciones ──────")
 	if len(t.funciones) == 0 {
 		fmt.Println(" (ninguna)")
 	}
@@ -114,13 +132,29 @@ func (t *TablaSimbolos) Imprimir() {
 		fmt.Printf("  %s(%s) -> %s\n", f.Nombre, params, f.TipoRetorno)
 	}
 
-	fmt.Println("Variables:")
-	fmt.Println("Variables:")
+	//scope global
+	fmt.Println("\n── Variables globales ───────────────────")
 	if len(t.variables) == 0 {
 		fmt.Println("  (ninguna)")
 	}
 	for _, v := range t.variables {
 		fmt.Printf("  %s : %s\n", v.Nombre, v.Tipo)
 	}
+
+	// scopes locales del historial
+	for _, scope := range t.historial {
+		fmt.Printf("\n── Variables locales [%s] ────────────────\n", scope.nombre)
+		if len(scope.variables) == 0 {
+			fmt.Println("  (ninguna)")
+		}
+		for _, v := range scope.variables {
+			fmt.Printf("  %s : %s\n", v.Nombre, v.Tipo)
+		}
+	}
+
 	fmt.Println("=====================================")
+}
+
+func (a *Analizador) ImprimirTabla() {
+	a.tabla.Imprimir()
 }
