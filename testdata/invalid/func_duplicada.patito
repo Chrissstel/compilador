@@ -1,0 +1,15 @@
+programa error ;
+
+nula saludar( ) {
+    {
+        escribe( "hola" ) ;
+    }
+} ;
+
+nula saludar( ) {
+    {
+        escribe( "hola de nuevo" ) ;
+    }
+} ;
+
+inicio { } fin

@@ -1,0 +1,8 @@
+programa error ;
+inicio
+{
+    a = 1 ;
+    b = 2 ;
+    funcionFantasma( a ) ;
+}
+fin

@@ -1,0 +1,6 @@
+programa error ;
+inicio
+{
+    resultado = miFuncion( 1, 2 ) ;
+}
+fin

@@ -1,0 +1,5 @@
+programa error ;
+vars
+    x : entero;
+    x : flotante;
+inicio { } fin

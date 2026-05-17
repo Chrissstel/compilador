@@ -1,0 +1,13 @@
+programa error ;
+
+entero suma( a : entero, b : entero ) {
+    {
+        a = a + b ;
+    }
+} ;
+
+inicio
+{
+    x = suma( 1, 2, 3 ) ;
+}
+fin
