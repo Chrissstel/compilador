@@ -1,6 +1,6 @@
 # 🦆 Compilador PATITO
  
-> Compilador de un lenguaje de programación inventado llamado **PATITO**, implementado en Go. Incluye análisis léxico (lexer) y análisis sintáctico (parser) con generación de AST.
+> Compilador de un lenguaje de programación inventado llamado **PATITO**, implementado en Go. Incluye análisis léxico (lexer), análisis sintáctico (parser) con generación de AST, y análisis semántico con tabla de símbolos.
  
 ---
  
@@ -55,8 +55,14 @@ compilador/
 │   ├── ast/
 │   │   ├── ast.go          # Nodos del árbol de sintaxis abstracta
 │   │   └── printer.go      # Impresión del AST en consola
-│   └── parser/
-│       └── parser.go       # Parser recursivo descendente
+│   ├── parser/
+│   │   └── parser.go       # Parser recursivo descendente
+│   └── semantic/
+│       ├── tabla.go        # Tabla de símbolos
+│       └── semantic.go     # Analizador semántico
+├── testdata/
+│   ├── valid/              # Programas válidos para pruebas
+│   └── invalid/            # Programas inválidos para pruebas
 ├── main.go                 # Punto de entrada
 ├── go.mod
 └── README.md
@@ -89,9 +95,9 @@ src, err := os.ReadFile("examples/tu_programa.patito")
 ```
  
 ### Salida esperada
- 
-Al correr un programa válido verás el árbol AST impreso en consola:
- 
+
+Al correr un programa válido verás el árbol AST impreso en consola, seguido del resultado del análisis semántico y la tabla de símbolos:
+
 ```
 Programa: ejemplo
 ├── Vars
@@ -107,6 +113,35 @@ Programa: ejemplo
     ├── Asigna: x
     │   └── Expr: 10
     └── ...
+
+✓ Análisis semántico correcto
+
+╔══════════════════════════════════════╗
+║        TABLA DE SÍMBOLOS             ║
+╚══════════════════════════════════════╝
+
+── Funciones ────────────────────────────
+  suma(a:entero, b:entero) → entero
+
+── Variables globales ───────────────────
+  x : entero
+  y : entero
+  resultado : flotante
+
+── Variables locales [suma] ─────────────
+  a : entero
+  b : entero
+  temp : entero
+
+────────────────────────────────────────
+```
+
+Si hay errores semánticos, se reportan todos antes de terminar:
+
+```
+=== Errores semánticos ===
+SemanticError: variable 'z' no fue declarada
+SemanticError: función 'miFuncion' no fue declarada
 ```
  
 ---
@@ -253,46 +288,85 @@ EXPRESION   →  relacionales (>, <, ==, !=)   — menor precedencia
 ```
  
 Esto garantiza que `2 + 3 * 4` se evalúe como `2 + (3 * 4)` y no `(2 + 3) * 4`.
- 
+
 ---
 
-### Casos de prueba
- 
-Se implementaron tests divididos en dos niveles: tests del lexer y tests del parser.
-Cómo correr los tests
- 
-```bash
-#para correr todos los tests
-go test ./...
+## El Análisis Semántico
 
-#para correr solo los del lexer
-go test ./src/lexer/
+Una vez generado el AST, el analizador semántico lo recorre para verificar que el programa tenga sentido más allá de su sintaxis. Esta etapa detecta errores que el parser no puede ver.
 
-#para correr solo los del parser
-go test ./src/parser/
+### Qué se verifica
+
+- **Variables**: que no se declaren dos veces y que no se usen sin haber sido declaradas.
+- **Funciones**: que no se declaren dos veces y que no se llamen sin haber sido declaradas.
+- **Argumentos**: que el número de argumentos en cada llamada coincida con los parámetros declarados.
+- **Scope**: que las variables locales de una función no sean accesibles desde fuera de ella.
+
+### La Tabla de Símbolos
+
+Toda la información recolectada durante el análisis se guarda en una **tabla de símbolos**, dividida en dos secciones:
+
+- **Global**: variables declaradas en el cuerpo principal y todas las funciones del programa.
+- **Local**: variables y parámetros de cada función, que solo existen dentro de su scope.
+
+PATITO tiene un sistema de scopes de exactamente **dos niveles** — global y local de función. Los bloques `si`, `mientras` y `[ ]` no crean su propio scope, por lo que usan las variables del scope activo.
 
 ```
+scope global
+└── scope de función  (uno a la vez, no anidados)
+```
+
+### Errores acumulados
+
+El analizador **no se detiene en el primer error**. Recorre el AST completo y acumula todos los errores encontrados para reportarlos juntos al final, igual que cualquier compilador real.
+
+```go
+// El analizador sigue aunque encuentre errores
+func (a *Analizador) error(msg string) {
+    a.errores = append(a.errores, "SemanticError: "+msg)
+}
+```
+
+### Orden de análisis
+
+El analizador sigue este orden para permitir que una función pueda llamar a otra declarada después de ella:
+
+```
+1. Registrar variables globales
+2. Registrar las firmas de todas las funciones   ← primero solo el nombre y params
+3. Analizar el cuerpo de cada función            ← ahora sí con el cuerpo completo
+4. Analizar el cuerpo principal (inicio...fin)
+```
  
-Para ver el detalle de cada test, se puede añadir la bandera “-v” y se va a imprimir el nombre y el resultado de cada caso. (Por ejemplo: “ go test ./... -v ”.
- 
----
- 
-## Estado actual del compilador
- 
-- [x] Análisis léxico (Lexer)
-- [x] Análisis sintáctico (Parser)
-- [x] Generación de AST
-- [x] Impresión del AST
-- [ ] Tabla de símbolos
-- [ ] Análisis semántico
-- [ ] Generación de código intermedio
-- [ ] Ejecución / Máquina virtual
----
- 
-## Tecnologías
- 
-- **Lenguaje**: [Go](https://go.dev/) 1.21+
-- **Sin dependencias externas** — implementación desde cero
----
- 
-*Proyecto académico — Construcción de Compiladores*
+Se implementaron tests automatizados en tres niveles: lexer, parser y semántico.
+
+```bash
+# correr todos los tests
+go test ./...
+
+# solo el lexer
+go test ./src/lexer/
+
+# solo el parser
+go test ./src/parser/
+
+# solo el semántico
+go test ./src/semantic/
+```
+
+Para ver el detalle de cada test se añade la bandera `-v`:
+
+```bash
+go test ./... -v
+```
+
+Para ver la cobertura:
+
+```bash
+go test ./... -cover
+```
+
+Los archivos de prueba están en `testdata/`:
+
+- `testdata/valid/` — programas que deben pasar léxico, sintáctico y semántico sin errores.
+- `testdata/invalid/` — programas con errores intencionales (sintaxis rota, variables no declaradas, funciones duplicadas, argumentos incorrectos, etc.) que deben ser detectados.
