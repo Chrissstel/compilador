@@ -1,0 +1,56 @@
+PARA LOS CUADRUPLOS
+
+type Generator struct { 
+	Operands stack[Operand] 
+	Operators stack[string] 
+	Types stack[TipoDato] 
+	Jumps stack[int] 
+	Quads []Quadruple 
+}
+
+Operands stack[Operand] --> puede ser solo guardar la dir de memoria o un struct de address y type
+Operators stack[string] --> de que + - * / ...
+Types todavía no sé si juntarla con Operands
+Jumps stack[int] --> para los if, else, while
+Quads []Quadruple  --> la lista final
+
+
+//POR EJEMPLO - ya es el ast recorrido postorder
+a
+b
+c
+*
++
+
+g.Operands.Push(a)
+g.Operands.Push(b)
+g.Operands.Push(c)
+g.Operators.Push("*")
+
+//AHORA PARA RESOLVERLO
+sacas right, sacas left, sacas operator, validas tipos, creas temporal y emites el cuádruplo
+
+right := g.Operands.Pop()
+left := g.Operands.Pop()
+op := g.Operators.Pop()
+resultType := SemanticCube(left.Type, op, right.Type) //eso en caso de que se junte type con operand
+temp := g.NewTemp(resultType)
+g.Emit(Quadruple{
+    Op: op,
+    Left: left.Address,
+    Right: right.Address,
+    Result: temp.Address,
+})
+
+func (g *Generator) Emit(q Quadruple) {
+    g.Quads = append(g.Quads, q)
+}
+
+//se pushea el temporal porque se va a seguir usando
+g.Operands.Push(temp)
+
+//y pues sigues con el proceso
+
+//falta resolver lo de pushjump y filljump
+
+

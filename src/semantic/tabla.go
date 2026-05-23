@@ -14,6 +14,8 @@ const (
 type EntradaVar struct {
 	Nombre string
 	Tipo   TipoDato
+	//se añadió lo de la dirección
+	Direccion int
 }
 
 // es una función ya declarada

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"compilador/src/codegen"
 	"compilador/src/lexer"
+	"compilador/src/memory"
 	"compilador/src/parser"
 	"compilador/src/semantic"
 	"fmt"
@@ -41,5 +43,11 @@ func main() {
 
 	fmt.Println("\nAnálisis semántico correcto")
 	analizador.ImprimirTabla()
+
+	//Generación de cuadruplos
+	mem := memory.NewMemoryManager()
+	gen := codegen.NewGenerator(mem)
+	//gen.visit(programa)
+	gen.PrintQuads()
 
 }
