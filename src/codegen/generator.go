@@ -15,14 +15,16 @@ type Generator struct {
 	Mem       *memory.MemoryManager
 
 	//usamos la tabla de símbolos para que consulte la dir de memoria
-	Tabla *semantic.TablaSimbolos
+	Tabla     *semantic.TablaSimbolos
+	FuncStart map[string]int // nombre → índice del primer quad de la función
 }
 
 func NewGenerator(mem *memory.MemoryManager, tabla *semantic.TablaSimbolos) *Generator {
 	return &Generator{
-		Quads: make([]Quadruple, 0),
-		Mem:   mem,
-		Tabla: tabla,
+		Quads:     make([]Quadruple, 0),
+		Mem:       mem,
+		Tabla:     tabla,
+		FuncStart: make(map[string]int),
 	}
 }
 
@@ -62,9 +64,13 @@ func (g *Generator) FillJump(quadIdx int, target int) {
 // PrintQuads imprime todos los cuádruplos para debug
 func (g *Generator) PrintQuads() {
 	fmt.Println("\n=== Cuádruplos ===")
+	fmt.Printf("%-5s %-12s %-8s %-8s %-8s\n", "idx", "op", "left", "right", "result")
+	fmt.Println("─────────────────────────────────────────")
 	for i, q := range g.Quads {
-		fmt.Printf("%3d: %s\n", i, q)
+		fmt.Printf("%-5d %-12s %-8d %-8d %-8d\n",
+			i, q.Op, q.Left, q.Right, q.Result)
 	}
+	fmt.Println()
 }
 
 func (g *Generator) LookupVar(name string) (Operand, error) {
@@ -82,10 +88,22 @@ func (g *Generator) LookupVar(name string) (Operand, error) {
 
 func (g *Generator) Visit(prog *ast.Programa) {
 	//semantics ya le asignó dir a las vars globales
+	// si hay funciones, emite un GOTO para saltar al main
+	// y lo rellena cuando lleguemos al inicio
+	if len(prog.Funcs) > 0 {
+		g.Emit(Quadruple{Op: "GOTO", Left: 0, Right: 0, Result: 0})
+		g.PushJump() // guarda el índice de este GOTO
+	}
 
 	//generamos las funciones
 	for _, f := range prog.Funcs {
 		g.visitFunc(f)
+	}
+
+	// rellena el GOTO con la posición del inicio del main
+	if len(prog.Funcs) > 0 {
+		mainJump := g.Jumps.Pop()
+		g.FillJump(mainJump, len(g.Quads))
 	}
 
 	//visitamos el cuerpo principal
@@ -97,14 +115,24 @@ func (g *Generator) Visit(prog *ast.Programa) {
 //PARA LAS FUNCIONES
 
 func (g *Generator) visitFunc(f *ast.Func) {
-	//
-	entrada, _ := g.Tabla.BuscarFunc(f.ID)
-	snapshot := g.Tabla.EntrarScope(f.ID, entrada.Parametros)
+	// guarda el índice donde empieza esta función
+	g.FuncStart[f.ID] = len(g.Quads)
 
+	//usa el scope que ya construyó el semántico (params + vars locales)
+	snapshot := g.Tabla.EntrarScopeFunc(f.ID)
 	g.visitCuerpo(f.Cuerpo)
 
-	g.Emit(Quadruple{Op: "ENDFUNC"})
+	// genera el retorno si existe
+	if f.Retorno != nil {
+		retVar, err := g.LookupVar(f.Retorno.ID)
+		if err != nil {
+			fmt.Println("Codegen error:", err)
+		} else {
+			g.Emit(Quadruple{Op: "RETURN", Left: retVar.Address, Right: 0, Result: 0})
+		}
+	}
 
+	g.Emit(Quadruple{Op: "ENDFUNC"})
 	g.Tabla.SalirScope(snapshot)
 }
 
@@ -240,9 +268,30 @@ func (g *Generator) visitLlamada(n *ast.Llamada) {
 		param := g.Operands.Pop()
 		g.Emit(Quadruple{Op: "PARAM", Left: param.Address, Right: 0, Result: 0})
 	}
-	g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: 0})
-	// el Result del GOSUB lo rellenas cuando sepas la dirección de la función
-	// lo dejamos pendiente
+
+	// busca dónde empieza la función
+	inicio, existe := g.FuncStart[n.ID]
+	if !existe {
+		// la función todavía no fue visitada (declarada después del uso)
+		// emite el GOSUB con 0 y guarda el índice para rellenarlo después
+		g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: 0})
+		// por ahora dejamos pendiente este caso
+	} else {
+		g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: inicio})
+	}
+
+	// si la función retorna algo, pushea un temporal con el valor de retorno
+	entrada, existe := g.Tabla.BuscarFunc(n.ID)
+	if !existe {
+		fmt.Printf("Codegen error: función '%s' no encontrada\n", n.ID)
+		return
+	}
+
+	if entrada.TipoRetorno != "nula" {
+		temp := g.NewTemp(string(entrada.TipoRetorno))
+		g.Emit(Quadruple{Op: "RETVAL", Left: 0, Right: 0, Result: temp.Address})
+		g.Operands.Push(temp)
+	}
 }
 
 // PARA EXPRESIONES

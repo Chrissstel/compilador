@@ -2,7 +2,7 @@ programa completo ;
 vars
     x : entero;
     y : entero;
-    res : flotante;
+    res : entero;
 
 entero maximo( a : entero, b : entero ) {
     {

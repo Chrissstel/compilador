@@ -1,8 +1,12 @@
 package main
 
 import (
+	"compilador/src/codegen"
 	"compilador/src/lexer"
+	"compilador/src/memory"
 	"compilador/src/parser"
+	"compilador/src/semantic"
+
 	//"compilador/src/parser"
 	"fmt"
 	"os"
@@ -31,26 +35,22 @@ func main() {
 	programa.Print()
 
 	//Semántico
-	/*
-		mem := memory.NewMemoryManager()
-		analizador := semantic.NuevoAnalizador(mem)
-		analizador.AnalizarPrograma(programa)
+	mem := memory.NewMemoryManager()
+	analizador := semantic.NuevoAnalizador(mem)
+	analizador.AnalizarPrograma(programa)
 
-		if analizador.HayErrores() {
-			fmt.Println("\n=== Errores semánticos ===")
-			analizador.ImprimirErrores()
-			os.Exit(1)
-		}
+	if analizador.HayErrores() {
+		fmt.Println("\n=== Errores semánticos ===")
+		analizador.ImprimirErrores()
+		os.Exit(1)
+	}
 
-		fmt.Println("\nAnálisis semántico correcto")
-		analizador.ImprimirTabla()
-	*/
+	fmt.Println("\nAnálisis semántico correcto")
+	analizador.ImprimirTabla()
 
 	//Generación de cuadruplos
-	/*
-		gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
-		gen.Visit(programa)
-		gen.PrintQuads()
-	*/
+	gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
+	gen.Visit(programa)
+	gen.PrintQuads()
 
 }

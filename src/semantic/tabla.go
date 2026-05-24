@@ -98,6 +98,28 @@ func (t *TablaSimbolos) EntrarScope(nombreFunc string, params []EntradaVar) map[
 	return snapshot
 }
 
+func (t *TablaSimbolos) EntrarScopeFunc(nombreFunc string) map[string]EntradaVar {
+	snapshot := t.variables
+
+	// busca el scope guardado en el historial (lo llenó el semántico)
+	for _, s := range t.historial {
+		if s.nombre == nombreFunc {
+			t.variables = s.variables
+			t.scopeActual = nombreFunc
+			return snapshot
+		}
+	}
+
+	// fallback: solo parámetros (no debería llegar aquí)
+	entrada := t.funciones[nombreFunc]
+	t.variables = make(map[string]EntradaVar)
+	for _, p := range entrada.Parametros {
+		t.variables[p.Nombre] = p
+	}
+	t.scopeActual = nombreFunc
+	return snapshot
+}
+
 //para restaurar el scope anterior
 func (t *TablaSimbolos) SalirScope(snapshot map[string]EntradaVar) {
 	//guarda el scope local en el historial antes de cerrarlo
