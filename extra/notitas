@@ -26,6 +26,7 @@ g.Operands.Push(a)
 g.Operands.Push(b)
 g.Operands.Push(c)
 g.Operators.Push("*")
+g.Operators.Push("+")
 
 //AHORA PARA RESOLVERLO
 sacas right, sacas left, sacas operator, validas tipos, creas temporal y emites el cuádruplo
@@ -54,3 +55,55 @@ g.Operands.Push(temp)
 //falta resolver lo de pushjump y filljump
 
 
+
+
+//EJEMPLO DE a = 5 + b * 2 ;
+
+para 5 + b * 2
+Exp {
+    Termino: Factor(5)
+    Op: "+"
+    Der: Exp {
+        Termino: {
+            Factor: Valor(b)
+            Op: "*"
+            Der: Termino {
+                Factor: Valor(2)
+            }
+        }
+        Op: ""
+        Der: nil
+    }
+}
+
+//El recorrido sería algo así
+visitExp:
+  1. visitTermino(Factor 5)    → push (13000, entero)
+  2. ve Op "+"                 → push "+" a Operators
+  3. visitExp(Der)
+       visitTermino:
+         1. visitFactor(b)     → push (2000, flotante)
+         2. ve Op "*"          → push "*" a Operators
+         3. visitTermino(Der)
+              visitFactor(2)   → push (13001, entero)
+         4. resolveOp()
+              right = (13001, entero)
+              left  = (2000, flotante)
+              op    = "*"
+              cube("flotante", "entero", "*") → "flotante"
+              temp  = (10000, flotante)
+              emit(*, 2000, 13001, 10000)
+              push (10000, flotante)
+  4. resolveOp()
+       right = (10000, flotante)
+       left  = (13000, entero)
+       op    = "+"
+       cube("entero", "flotante", "+") → "flotante"
+       temp  = (10001, flotante)
+       emit(+, 13000, 10000, 10001)
+       push (10001, flotante)
+
+visitAsigna:
+  result = pop() → (10001, flotante)
+  dest = LookupVar("a") → (1000, entero)
+  emit(=, 10001, 0, 1000)

@@ -6,7 +6,8 @@ v_3 : flotante;
 
 inicio
 {
-    v_1 = 5 + 10;
+    v_2 = 15;
+    v_1 = 5 + v_2;
     escribe("Hello World!");
 }
 fin

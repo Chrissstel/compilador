@@ -11,8 +11,9 @@ import (
 )
 
 func main() {
+
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./testdata/completo.patito") //o completo.patito
+	src, err := os.ReadFile("./testdata/01.patito") //o completo.patito
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +33,8 @@ func main() {
 	programa.Print()
 
 	//Semántico
-	analizador := semantic.NuevoAnalizador()
+	mem := memory.NewMemoryManager()
+	analizador := semantic.NuevoAnalizador(mem)
 	analizador.AnalizarPrograma(programa)
 
 	if analizador.HayErrores() {
@@ -45,9 +47,8 @@ func main() {
 	analizador.ImprimirTabla()
 
 	//Generación de cuadruplos
-	mem := memory.NewMemoryManager()
-	gen := codegen.NewGenerator(mem)
-	//gen.visit(programa)
+	gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
+	gen.Visit(programa)
 	gen.PrintQuads()
 
 }

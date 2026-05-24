@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"compilador/src/lexer"
+	"compilador/src/memory"
 	"compilador/src/parser"
 )
 
@@ -16,8 +17,8 @@ func analizarStr(t *testing.T, input string) []string {
 	tokens := lexer.Tokenize(input)
 	p := parser.New(tokens)
 	prog := p.ParsePrograma()
-
-	a := NuevoAnalizador()
+	mem := memory.NewMemoryManager()
+	a := NuevoAnalizador(mem)
 	a.AnalizarPrograma(prog)
 	return a.errores
 }
@@ -271,7 +272,8 @@ func TestSemantico_ArchivosValidos(t *testing.T) {
 			src, _ := os.ReadFile(archivo)
 			tokens := lexer.Tokenize(string(src))
 			prog := parser.New(tokens).ParsePrograma()
-			a := NuevoAnalizador()
+			mem := memory.NewMemoryManager()
+			a := NuevoAnalizador(mem)
 			a.AnalizarPrograma(prog)
 			if a.HayErrores() {
 				t.Errorf("no se esperaban errores:\n%s",
@@ -299,7 +301,8 @@ func TestSemantico_ArchivosInvalidos(t *testing.T) {
 				defer func() { recover() }() // atrapa panics del parser
 				tokens := lexer.Tokenize(string(src))
 				prog := parser.New(tokens).ParsePrograma()
-				a := NuevoAnalizador()
+				mem := memory.NewMemoryManager()
+				a := NuevoAnalizador(mem)
 				a.AnalizarPrograma(prog)
 				if !a.HayErrores() {
 					t.Errorf("%s debería tener errores pero pasó limpio",

@@ -14,22 +14,26 @@ type MemoryManager struct {
 	constFloat int
 
 	//los mapas para las consts
-	constIntMap   map[int]int     //valor a dir
-	constFloatMap map[float64]int //valor a dir
+	constIntMap    map[int]int     //valor a dir
+	constFloatMap  map[float64]int //valor a dir
+	constString    int
+	constStringMap map[string]int //valor a dir
 }
 
 func NewMemoryManager() *MemoryManager {
 	return &MemoryManager{
-		globalInt:     1000,
-		globalFloat:   2000,
-		localInt:      5000,
-		localFloat:    6000,
-		tempInt:       9000,
-		tempFloat:     10000,
-		constInt:      13000,
-		constFloat:    14000,
-		constIntMap:   make(map[int]int),
-		constFloatMap: make(map[float64]int),
+		globalInt:      1000,
+		globalFloat:    2000,
+		localInt:       5000,
+		localFloat:     6000,
+		tempInt:        9000,
+		tempFloat:      10000,
+		constInt:       13000,
+		constFloat:     14000,
+		constIntMap:    make(map[int]int),
+		constFloatMap:  make(map[float64]int),
+		constString:    15000,
+		constStringMap: make(map[string]int),
 	}
 }
 
@@ -99,5 +103,15 @@ func (m *MemoryManager) GetConstFloat(val float64) int {
 	}
 	addr := m.NextConstFloat()
 	m.constFloatMap[val] = addr
+	return addr
+}
+
+func (m *MemoryManager) RegisterString(val string) int {
+	if addr, exists := m.constStringMap[val]; exists {
+		return addr
+	}
+	addr := m.constString
+	m.constString++
+	m.constStringMap[val] = addr
 	return addr
 }

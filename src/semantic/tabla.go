@@ -50,11 +50,11 @@ func NuevaTabla() *TablaSimbolos {
 
 //VARIABLES
 
-func (t *TablaSimbolos) AgregarVar(nombre string, tipo TipoDato) error {
+func (t *TablaSimbolos) AgregarVar(nombre string, tipo TipoDato, dir int) error {
 	if _, existe := t.variables[nombre]; existe {
 		return fmt.Errorf("variable '%s' ya fue declarada en scope '%s'", nombre, t.scopeActual)
 	}
-	t.variables[nombre] = EntradaVar{Nombre: nombre, Tipo: tipo}
+	t.variables[nombre] = EntradaVar{Nombre: nombre, Tipo: tipo, Direccion: dir}
 	return nil
 }
 

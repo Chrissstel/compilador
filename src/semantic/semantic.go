@@ -2,6 +2,7 @@ package semantic
 
 import (
 	"compilador/src/ast"
+	"compilador/src/memory"
 	"fmt"
 )
 
@@ -10,12 +11,14 @@ import (
 type Analizador struct {
 	tabla   *TablaSimbolos
 	errores []string
+	Mem     *memory.MemoryManager
 }
 
-func NuevoAnalizador() *Analizador {
+func NuevoAnalizador(mem *memory.MemoryManager) *Analizador {
 	return &Analizador{
 		tabla:   NuevaTabla(),
 		errores: make([]string, 0),
+		Mem:     mem,
 	}
 }
 
@@ -62,7 +65,23 @@ func (a *Analizador) analizarVars(vars *ast.Vars) {
 	for _, decl := range vars.Declaraciones {
 		tipo := TipoDato(decl.Tipo)
 		for _, id := range decl.IDs {
-			if err := a.tabla.AgregarVar(id, tipo); err != nil {
+			//pide dirección de memoria
+			var dir int
+			if a.tabla.scopeActual == "global" {
+				if tipo == TipoFlotante {
+					dir = a.Mem.NextGlobalFloat()
+				} else {
+					dir = a.Mem.NextGlobalInt()
+				}
+			} else {
+				if tipo == TipoFlotante {
+					dir = a.Mem.NextLocalFloat()
+				} else {
+					dir = a.Mem.NextLocalInt()
+				}
+			}
+
+			if err := a.tabla.AgregarVar(id, tipo, dir); err != nil {
 				a.error(err.Error())
 			}
 		}
@@ -75,7 +94,18 @@ func (a *Analizador) analizarVars(vars *ast.Vars) {
 func (a *Analizador) registrarFirmaFunc(f *ast.Func) {
 	params := make([]EntradaVar, len(f.Params))
 	for i, p := range f.Params {
-		params[i] = EntradaVar{Nombre: p.ID, Tipo: TipoDato(p.Tipo)}
+		var dir int
+		if TipoDato(p.Tipo) == TipoFlotante {
+			dir = a.Mem.NextLocalFloat()
+		} else {
+			dir = a.Mem.NextLocalInt()
+		}
+
+		params[i] = EntradaVar{
+			Nombre:    p.ID,
+			Tipo:      TipoDato(p.Tipo),
+			Direccion: dir,
+		}
 	}
 	if err := a.tabla.AgregarFunc(f.ID, TipoDato(f.TipoRetorno), params); err != nil {
 		a.error(err.Error())
@@ -224,4 +254,8 @@ func (a *Analizador) analizarValor(v *ast.Valor) {
 		}
 	}
 	//si es constante no hay nada que verificar
+}
+
+func (a *Analizador) ObtenerTabla() *TablaSimbolos {
+	return a.tabla
 }
