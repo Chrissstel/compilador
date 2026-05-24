@@ -125,6 +125,7 @@ func createLexer(source string) *lexer {
 			{regexp.MustCompile(`\bsino\b`), defaultHandler(P_SINO, "sino")},
 			{regexp.MustCompile(`\bescribe\b`), defaultHandler(P_ESCRIBE, "escribe")},
 			{regexp.MustCompile(`\bnula\b`), defaultHandler(P_NULA, "nula")},
+			{regexp.MustCompile(`\bretornar\b`), defaultHandler(P_RETORNAR, "retornar")},
 
 			// Constantes numéricas
 			{regexp.MustCompile(`\d+\.\d+`), numberHandler(CTE_FLOTANTE)},

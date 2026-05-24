@@ -36,7 +36,12 @@ func (f *Func) print(prefix, childPrefix string) {
 	if f.Vars != nil {
 		f.Vars.print(childPrefix + "├── ")
 	}
-	f.Cuerpo.print(childPrefix+"└── ", childPrefix+"    ")
+	if f.Retorno != nil {
+		f.Cuerpo.print(childPrefix+"├── ", childPrefix+"│   ")
+		fmt.Printf("%s└── Retorno: %s\n", childPrefix, f.Retorno.ID)
+	} else {
+		f.Cuerpo.print(childPrefix+"└── ", childPrefix+"    ")
+	}
 }
 
 func (c *Cuerpo) print(prefix, childPrefix string) {

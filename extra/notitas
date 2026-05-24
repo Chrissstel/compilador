@@ -1,3 +1,8 @@
+No se había tomado en cuenta el retorno en las funciones no nulas, por lo que ahora
+las funciones solo pueden retornar ids que sean del tipo declarado (para no complicar mucho la solución)
+
+
+
 PARA LOS CUADRUPLOS
 
 type Generator struct { 

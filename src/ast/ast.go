@@ -26,6 +26,12 @@ type Func struct {
 	Params      []*Param
 	Vars        *Vars
 	Cuerpo      *Cuerpo
+	Retorno     *Retorno //puede ser nil
+}
+
+//AGREGUÉ LO DE RETORNAR
+type Retorno struct {
+	ID string //solo puede retornar ids
 }
 
 type Param struct {

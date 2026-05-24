@@ -127,6 +127,39 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 	//analizar el cuerpo
 	a.analizarCuerpo(f.Cuerpo)
 
+	//validar lo del retorno
+	if f.TipoRetorno == "nula" {
+		// función nula NO debe tener retornar
+		if f.Retorno != nil {
+			a.error(fmt.Sprintf(
+				"función '%s' es nula y no puede tener retornar", f.ID,
+			))
+		}
+	} else {
+		// función no nula SÍ debe tener retornar
+		if f.Retorno == nil {
+			a.error(fmt.Sprintf(
+				"función '%s' debe retornar un valor de tipo '%s'",
+				f.ID, f.TipoRetorno,
+			))
+		} else {
+			// verifica que el id exista en el scope actual
+			varEntry, existe := a.tabla.BuscarVar(f.Retorno.ID)
+			if !existe {
+				a.error(fmt.Sprintf(
+					"función '%s': variable '%s' en retornar no fue declarada",
+					f.ID, f.Retorno.ID,
+				))
+			} else if string(varEntry.Tipo) != f.TipoRetorno {
+				// verifica que el tipo coincida
+				a.error(fmt.Sprintf(
+					"función '%s': retorna '%s' de tipo '%s' pero se esperaba '%s'",
+					f.ID, f.Retorno.ID, varEntry.Tipo, f.TipoRetorno,
+				))
+			}
+		}
+	}
+
 	//salir del scope
 	a.tabla.SalirScope(snapshot)
 }

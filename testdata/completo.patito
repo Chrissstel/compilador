@@ -8,13 +8,14 @@ entero maximo( a : entero, b : entero ) {
     {
         si ( a > b )
         {
-            a = a ;
+            a = a + 1;
         }
         sino
         {
             a = b ;
         } ;
     }
+    retornar a;
 } ;
 
 nula imprimirResultado( val : entero, msg : entero ) {

@@ -138,7 +138,7 @@ func (p *Parser) esInicioFunc() bool {
 	return k == lexer.P_NULA || k == lexer.P_ENTERO || k == lexer.P_FLOTANTE
 }
 
-// <FUNCS> → <DEF_FUNC> id ( (<PARAM> (, <PARAM>)*)? ) { <VARS>? <CUERPO> } ;
+// <FUNCS> → <DEF_FUNC> id ( (<PARAM> (, <PARAM>)*)? ) { <VARS>? <CUERPO> <RETORNO>? } ;
 func (p *Parser) parseFuncs() *ast.Func {
 	tipoRet := p.parseDefFunc()
 	id := p.expect(lexer.IDENTIFICADOR).Value
@@ -148,6 +148,7 @@ func (p *Parser) parseFuncs() *ast.Func {
 	p.expect(lexer.ABRE_LLAVE)
 	vars := p.parseV()
 	cuerpo := p.parseCuerpo()
+	retorno := p.parseRetorno()
 	p.expect(lexer.CIERRA_LLAVE)
 	p.expect(lexer.SEMICOLON)
 
@@ -157,7 +158,19 @@ func (p *Parser) parseFuncs() *ast.Func {
 		Params:      params,
 		Vars:        vars,
 		Cuerpo:      cuerpo,
+		Retorno:     retorno,
 	}
+}
+
+// <RETORNO> → retornar id ; | ε
+func (p *Parser) parseRetorno() *ast.Retorno {
+	if p.check(lexer.P_RETORNAR) {
+		p.advance()
+		id := p.expect(lexer.IDENTIFICADOR).Value
+		p.expect(lexer.SEMICOLON)
+		return &ast.Retorno{ID: id}
+	}
+	return nil
 }
 
 // <DEF_FUNC> → nula | entero | flotante
