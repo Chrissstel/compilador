@@ -10,14 +10,14 @@ type MemoryManager struct {
 	tempInt   int
 	tempFloat int
 
-	constInt   int
-	constFloat int
+	constInt    int
+	constFloat  int
+	constString int
 
 	//los mapas para las consts
 	constIntMap    map[int]int     //valor a dir
 	constFloatMap  map[float64]int //valor a dir
-	constString    int
-	constStringMap map[string]int //valor a dir
+	constStringMap map[string]int  //valor a dir
 }
 
 func NewMemoryManager() *MemoryManager {
@@ -30,9 +30,9 @@ func NewMemoryManager() *MemoryManager {
 		tempFloat:      10000,
 		constInt:       13000,
 		constFloat:     14000,
+		constString:    15000,
 		constIntMap:    make(map[int]int),
 		constFloatMap:  make(map[float64]int),
-		constString:    15000,
 		constStringMap: make(map[string]int),
 	}
 }

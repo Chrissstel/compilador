@@ -33,22 +33,12 @@ func (g *Generator) Emit(q Quadruple) {
 	g.Quads = append(g.Quads, q)
 }
 
-// pide una dirección temporal entera
-func (g *Generator) NewTempInt() Operand {
-	return Operand{Address: g.Mem.NextTempInt(), Type: "entero"}
-}
-
-// pide una dirección temporal flotante
-func (g *Generator) NewTempFloat() Operand {
-	return Operand{Address: g.Mem.NextTempFloat(), Type: "flotante"}
-}
-
 // para decidir el tipo automáticamente
 func (g *Generator) NewTemp(tipo string) Operand {
 	if tipo == "flotante" {
-		return g.NewTempFloat()
+		return Operand{Address: g.Mem.NextTempFloat(), Type: "flotante"}
 	}
-	return g.NewTempInt()
+	return Operand{Address: g.Mem.NextTempInt(), Type: "entero"}
 }
 
 // PushJump guarda el índice del último cuádruplo emitido
@@ -272,13 +262,10 @@ func (g *Generator) visitLlamada(n *ast.Llamada) {
 	// busca dónde empieza la función
 	inicio, existe := g.FuncStart[n.ID]
 	if !existe {
-		// la función todavía no fue visitada (declarada después del uso)
-		// emite el GOSUB con 0 y guarda el índice para rellenarlo después
-		g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: 0})
-		// por ahora dejamos pendiente este caso
-	} else {
-		g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: inicio})
+		fmt.Printf("Codegen error: función '%s' no tiene inicio registrado\n", n.ID)
+		return
 	}
+	g.Emit(Quadruple{Op: "GOSUB", Left: 0, Right: 0, Result: inicio})
 
 	// si la función retorna algo, pushea un temporal con el valor de retorno
 	entrada, existe := g.Tabla.BuscarFunc(n.ID)

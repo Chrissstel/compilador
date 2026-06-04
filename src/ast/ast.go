@@ -44,6 +44,8 @@ type Cuerpo struct {
 	Estatutos []Estatuto
 }
 
+//interfaz para los distintos tipos de estatutos
+//esto define que cualquier tipo que implemente el método estatutoNode() es un Estatuto
 type Estatuto interface{ estatutoNode() }
 
 type Asigna struct {

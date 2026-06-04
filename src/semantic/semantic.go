@@ -81,6 +81,7 @@ func (a *Analizador) analizarVars(vars *ast.Vars) {
 				}
 			}
 
+			//intenta agregar la variable a la tabla y si hay un error (como que ya existe) lo registra
 			if err := a.tabla.AgregarVar(id, tipo, dir); err != nil {
 				a.error(err.Error())
 			}
@@ -117,7 +118,7 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 	entrada, _ := a.tabla.BuscarFunc(f.ID)
 
 	//entrar al scope local con los parámetros ya dentro
-	snapshot := a.tabla.EntrarScope(f.ID, entrada.Parametros)
+	snapshot := a.tabla.EntrarScope(f.ID, entrada.Parametros) // = map[string]EntradaVar
 
 	//agregar vars locales
 	if f.Vars != nil {

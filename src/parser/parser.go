@@ -17,6 +17,7 @@ func New(tokens []lexer.Token) *Parser {
 }
 
 // Funciones extras
+// devuelve el token actual sin consumirlo
 func (p *Parser) current() lexer.Token {
 	return p.tokens[p.pos]
 }
@@ -29,6 +30,7 @@ func (p *Parser) peek() lexer.Token {
 	return p.tokens[p.pos]
 }
 
+// avanza al siguiente token y lo devuelve
 func (p *Parser) advance() lexer.Token {
 	t := p.tokens[p.pos]
 	if p.pos < len(p.tokens)-1 {
@@ -37,10 +39,12 @@ func (p *Parser) advance() lexer.Token {
 	return t
 }
 
+// verifica que el token actual sea del tipo esperado, si es así lo consume y devuelve
 func (p *Parser) check(kind lexer.TokenKind) bool {
 	return p.current().Kind == kind
 }
 
+// verifica que el token actual sea del tipo esperado, si es así lo consume y devuelve
 func (p *Parser) expect(kind lexer.TokenKind) lexer.Token {
 	t := p.current()
 	if t.Kind != kind {

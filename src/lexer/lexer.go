@@ -28,8 +28,10 @@ func Tokenize(source string) []Token {
 
 		for _, pattern := range lex.patterns {
 			loc := pattern.regex.FindStringIndex(lex.remainder())
+			//si regresa nil es porque no hubo match, si regresa un slice de 2 ints es porque
+			//sí hubo match y el primer int es el índice de inicio del match
 
-			if loc != nil && loc[0] == 0 {
+			if loc != nil && loc[0] == 0 { //que lo haya encontrado justo en donde vamos, no más adelante
 				pattern.handler(lex, pattern.regex)
 				matched = true
 				break
@@ -71,6 +73,7 @@ func (lex *lexer) at_eof() bool {
 	return lex.pos >= len(lex.source)
 }
 
+// regresa la función del handler en sí
 func defaultHandler(kind TokenKind, value string) regexHandler {
 	return func(lex *lexer, regex *regexp.Regexp) {
 		//mueve la posicion del lexer al final del valor
