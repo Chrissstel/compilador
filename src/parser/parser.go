@@ -72,15 +72,15 @@ func (p *Parser) ParsePrograma() *ast.Programa {
 	p.expect(lexer.P_FIN)
 
 	return &ast.Programa{
-		ID:     id,
-		Vars:   vars,
-		Funcs:  funcs,
-		Cuerpo: cuerpo,
+		ID:        id,
+		DeclsVars: vars,
+		Funcs:     funcs,
+		Cuerpo:    cuerpo,
 	}
 }
 
 // <V> → <VARS> | ε
-func (p *Parser) parseV() *ast.Vars {
+func (p *Parser) parseV() *ast.DeclsVars {
 	if p.check(lexer.P_VARS) {
 		return p.parseVars()
 	}
@@ -88,18 +88,18 @@ func (p *Parser) parseV() *ast.Vars {
 }
 
 // <VARS> → vars (<LOOP_ID> : <TIPO> ;)+
-func (p *Parser) parseVars() *ast.Vars {
+func (p *Parser) parseVars() *ast.DeclsVars {
 	p.expect(lexer.P_VARS)
-	var decls []*ast.DeclaracionVar
+	var decls []*ast.Vars //vars es varios IDs y un tipo
 
 	for p.check(lexer.IDENTIFICADOR) {
 		ids := p.parseLoopID()
 		p.expect(lexer.DOS_PUNTOS)
 		tipo := p.parseTipo()
 		p.expect(lexer.SEMICOLON)
-		decls = append(decls, &ast.DeclaracionVar{IDs: ids, Tipo: tipo})
+		decls = append(decls, &ast.Vars{IDs: ids, Tipo: tipo})
 	}
-	return &ast.Vars{Declaraciones: decls}
+	return &ast.DeclsVars{Decls: decls}
 }
 
 // id (, id)*

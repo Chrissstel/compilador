@@ -1,184 +1,120 @@
 package semantic
 
+//más que tabla.go es semantic.go
+
 import "fmt"
 
-type TipoDato string //tipos de entrada en la tabla
+//type TipoDato string //tipos de entrada en la tabla
 
+/*
 const (
 	TipoEntero   TipoDato = "entero"
 	TipoFlotante TipoDato = "flotante"
-	TipoNula     TipoDato = "nula"
+	TipoNulo     TipoDato = "nulo"
 )
+*/
 
 // puede ser una variable o parámetro
-type EntradaVar struct {
-	Nombre string
-	Tipo   TipoDato
+type VarEnDir struct {
+	Nombre string //va a estar doble el nombre de la variable, pero es para facilitar la búsqueda
+	Tipo   string
 	//se añadió lo de la dirección
 	Direccion int
 }
 
 // es una función ya declarada
-type EntradaFunc struct {
-	Nombre      string
-	TipoRetorno TipoDato
-	Parametros  []EntradaVar
-}
-
-//snapshot con nombre para guardarlo en el historial
-type scopeGuardado struct {
-	nombre    string
-	variables map[string]EntradaVar
+type FuncEnDir struct {
+	Nombre      string //aqui igual va a estar doble el nombre, pero por lo mismo
+	TipoRetorno string
+	Variables   map[string]VarEnDir //van a ser tanto parámetros como variables declaradas
+	Recursos    int                 //cantidad de recursos que usa
 }
 
 // TABLA
 type TablaSimbolos struct {
-	variables   map[string]EntradaVar  //del scope actual
-	funciones   map[string]EntradaFunc //siempre global
-	scopeActual string                 //"global" o nombre de la función
-	historial   []scopeGuardado        //para guardar los scopes que se cierran
+	funciones map[string]*FuncEnDir //global también se guarda como función
+	//scopeActual string                 //"global" o nombre de la función
 }
 
 func NuevaTabla() *TablaSimbolos {
 	return &TablaSimbolos{
-		variables:   make(map[string]EntradaVar),
-		funciones:   make(map[string]EntradaFunc),
-		scopeActual: "global",
-		historial:   make([]scopeGuardado, 0),
+		funciones: make(map[string]*FuncEnDir),
+		//scopeActual: "global",
 	}
 }
 
-//VARIABLES
+//PARA AGREGAR VARIABLES
+func (t *TablaSimbolos) AgregarVar(scope string, id string, tipo string) error {
+	// Implementación para agregar variable
+	funcDir := t.funciones[scope] //es una FuncEnDir
 
-func (t *TablaSimbolos) AgregarVar(nombre string, tipo TipoDato, dir int) error {
-	if _, existe := t.variables[nombre]; existe {
-		return fmt.Errorf("variable '%s' ya fue declarada en scope '%s'", nombre, t.scopeActual)
+	//checar si la variable ya existe
+	if _, exists := funcDir.Variables[id]; exists {
+		return fmt.Errorf("Error semántico: variable '%s' ya declarada en el scope '%s'", id, scope)
 	}
-	t.variables[nombre] = EntradaVar{Nombre: nombre, Tipo: tipo, Direccion: dir}
+
+	funcDir.Variables[id] = VarEnDir{
+		Nombre: id,
+		Tipo:   tipo,
+		// Falta asignar memoria
+	}
+
+	t.funciones[scope] = funcDir
+
+	//aumentar la cantidad de recursos por funcion
+	t.funciones[scope].Recursos++
+
 	return nil
 }
 
-func (t *TablaSimbolos) BuscarVar(nombre string) (EntradaVar, bool) {
-	entrada, existe := t.variables[nombre]
-	return entrada, existe
+//PARA BUSCAR VARIABLES
+func (t *TablaSimbolos) BuscarVar(id string, scope string) (VarEnDir, bool) {
+	//busca primero en el scope actual
+	localFuncDir := t.funciones[scope]
+	if localFuncDir == nil {
+		return VarEnDir{}, false //si no existe pues lo va a regresar vacío y false
+	}
+	varEntry, exists := localFuncDir.Variables[id]
+	if exists {
+		return varEntry, true
+	}
+
+	//si no está en el scope actual, busca en global
+	globalFuncDir := t.funciones["global"]
+	if globalFuncDir != nil {
+		varEntry, exists := globalFuncDir.Variables[id]
+		if exists {
+			return varEntry, true
+		}
+	}
+	return VarEnDir{}, false
 }
 
-//FUNCIONES
+//PARA REGISTRAR FUNCIONES
+func (t *TablaSimbolos) RegistrarFunc(id string, tipoRetorno string, params []VarEnDir) error {
+	// Implementación para agregar función
+	//también podríamos checar que no se añadan dos parámetros llamados igual
 
-func (t *TablaSimbolos) AgregarFunc(nombre string, tipoRetorno TipoDato, params []EntradaVar) error {
-	if _, existe := t.funciones[nombre]; existe {
-		return fmt.Errorf("función '%s' ya fue declarada", nombre)
+	//checar si la función ya existe
+	if _, exists := t.funciones[id]; exists {
+		return fmt.Errorf("Error semántico: función '%s' ya declarada", id)
 	}
-	t.funciones[nombre] = EntradaFunc{
-		Nombre:      nombre,
+
+	t.funciones[id] = &FuncEnDir{ //aqui se añade la función a la tabla, aunque sin las variables, para que pueda haber recursividad o funciones que se llamen entre sí sin importar el orden
+		Nombre:      id,
 		TipoRetorno: tipoRetorno,
-		Parametros:  params,
+		Variables:   make(map[string]VarEnDir),
+		Recursos:    0,
 	}
-	return nil
-}
 
-func (t *TablaSimbolos) BuscarFunc(nombre string) (EntradaFunc, bool) {
-	entrada, existe := t.funciones[nombre]
-	return entrada, existe
-}
-
-//SCOPES
-
-//guarda las variables globales y abre un scope local limpio
-func (t *TablaSimbolos) EntrarScope(nombreFunc string, params []EntradaVar) map[string]EntradaVar {
-	//guarda el scope actual para obtenerlo después
-	snapshot := t.variables
-
-	//nuevo scope local y le ponemos los parámetros
-	t.variables = make(map[string]EntradaVar)
-	for _, p := range params {
-		t.variables[p.Nombre] = p
-	}
-	t.scopeActual = nombreFunc
-	return snapshot
-}
-
-func (t *TablaSimbolos) EntrarScopeFunc(nombreFunc string) map[string]EntradaVar {
-	snapshot := t.variables
-
-	// busca el scope guardado en el historial (lo llenó el semántico)
-	for _, s := range t.historial {
-		if s.nombre == nombreFunc {
-			t.variables = s.variables
-			t.scopeActual = nombreFunc
-			return snapshot
+	//agregar los parámetros como variables de la función
+	for _, param := range params {
+		if err := t.AgregarVar(id, param.Nombre, param.Tipo); err != nil {
+			return err
 		}
 	}
 
-	// fallback: solo parámetros (no debería llegar aquí)
-	entrada := t.funciones[nombreFunc]
-	t.variables = make(map[string]EntradaVar)
-	for _, p := range entrada.Parametros {
-		t.variables[p.Nombre] = p
-	}
-	t.scopeActual = nombreFunc
-	return snapshot
-}
-
-//para restaurar el scope anterior
-func (t *TablaSimbolos) SalirScope(snapshot map[string]EntradaVar) {
-	//guarda el scope local en el historial antes de cerrarlo
-	copia := make(map[string]EntradaVar)
-	for k, v := range t.variables {
-		copia[k] = v
-	}
-	t.historial = append(t.historial, scopeGuardado{
-		nombre:    t.scopeActual,
-		variables: copia,
-	})
-
-	t.variables = snapshot
-	t.scopeActual = "global"
+	return nil
 }
 
 //DEBUG
-
-func (t *TablaSimbolos) Imprimir() {
-	fmt.Printf("\n=== Tabla de Símbolos ===\n")
-
-	fmt.Println("────── Funciones ──────")
-	if len(t.funciones) == 0 {
-		fmt.Println(" (ninguna)")
-	}
-	for _, f := range t.funciones {
-		params := ""
-		for i, p := range f.Parametros {
-			if i > 0 {
-				params += ", "
-			}
-			params += fmt.Sprintf("%s:%s", p.Nombre, p.Tipo)
-		}
-		fmt.Printf("  %s(%s) -> %s\n", f.Nombre, params, f.TipoRetorno)
-	}
-
-	//scope global
-	fmt.Println("\n── Variables globales ───────────────────")
-	if len(t.variables) == 0 {
-		fmt.Println("  (ninguna)")
-	}
-	for _, v := range t.variables {
-		fmt.Printf("  %s : %s\n", v.Nombre, v.Tipo)
-	}
-
-	// scopes locales del historial
-	for _, scope := range t.historial {
-		fmt.Printf("\n── Variables locales [%s] ────────────────\n", scope.nombre)
-		if len(scope.variables) == 0 {
-			fmt.Println("  (ninguna)")
-		}
-		for _, v := range scope.variables {
-			fmt.Printf("  %s : %s\n", v.Nombre, v.Tipo)
-		}
-	}
-
-	fmt.Println("=====================================")
-}
-
-func (a *Analizador) ImprimirTabla() {
-	a.tabla.Imprimir()
-}

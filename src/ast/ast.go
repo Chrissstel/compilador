@@ -3,28 +3,31 @@ package ast
 //convertí cada regla en un nodo
 //Nodo raíz
 type Programa struct {
-	ID     string
-	Vars   *Vars //puede ser nil
-	Funcs  []*Func
-	Cuerpo *Cuerpo
+	ID        string
+	DeclsVars *DeclsVars //puede ser nil
+	Funcs     []*Func
+	Cuerpo    *Cuerpo
 }
 
 //Variables
-type Vars struct {
-	Declaraciones []*DeclaracionVar
+
+type DeclsVars struct {
+	Decls []*Vars //cada vars es una lista de variables del mismo tipo
 }
 
-type DeclaracionVar struct {
+//funciona porque solo se puede declarar variables en <VARS>
+//Vars es lo mismo que una decl
+type Vars struct { //se usa en programa y en funciones
 	IDs  []string
 	Tipo string
 }
 
 //Funciones
 type Func struct {
-	TipoRetorno string //puede ser nula, entero o flotante
+	TipoRetorno string //puede ser nulo, entero o flotante
 	ID          string
 	Params      []*Param
-	Vars        *Vars
+	Vars        *DeclsVars //puede ser nil
 	Cuerpo      *Cuerpo
 	Retorno     *Retorno //puede ser nil
 }

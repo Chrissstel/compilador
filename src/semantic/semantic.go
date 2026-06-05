@@ -1,5 +1,7 @@
 package semantic
 
+//más que semantic.go es visitor.go
+
 import (
 	"compilador/src/ast"
 	"compilador/src/memory"
@@ -9,7 +11,8 @@ import (
 //Analizador
 
 type Analizador struct {
-	tabla   *TablaSimbolos
+	tabla *TablaSimbolos
+
 	errores []string
 	Mem     *memory.MemoryManager
 }
@@ -22,27 +25,20 @@ func NuevoAnalizador(mem *memory.MemoryManager) *Analizador {
 	}
 }
 
-// agregar un error sin tener que detener el análisis
-func (a *Analizador) error(msg string) {
-	a.errores = append(a.errores, "SemanticError: "+msg)
-}
-
-func (a *Analizador) HayErrores() bool {
-	return len(a.errores) > 0
-}
-
-func (a *Analizador) ImprimirErrores() {
-	for _, e := range a.errores {
-		fmt.Println(e)
-	}
-}
-
 //Entrada principal
 
 func (a *Analizador) AnalizarPrograma(prog *ast.Programa) {
+	//crear el scope global, añadimos la función global
+	a.tabla.funciones["global"] = &FuncEnDir{
+		Nombre:      "global",
+		TipoRetorno: "nula",
+		Variables:   nil,
+		Recursos:    0,
+	}
+
 	//registrar variables globales
-	if prog.Vars != nil {
-		a.analizarVars(prog.Vars)
+	if prog.DeclsVars != nil {
+		a.analizarVars(prog.DeclsVars, "global")
 	}
 
 	//registrar funciones, pero sin el cuerpo para que una función pueda llamar a otra que se declara después
@@ -56,34 +52,20 @@ func (a *Analizador) AnalizarPrograma(prog *ast.Programa) {
 	}
 
 	//analizar el cuerpo principal
-	a.analizarCuerpo(prog.Cuerpo)
+	a.analizarCuerpo(prog.Cuerpo, "global")
 }
 
 //VARIABLES
 
-func (a *Analizador) analizarVars(vars *ast.Vars) {
-	for _, decl := range vars.Declaraciones {
-		tipo := TipoDato(decl.Tipo)
+func (a *Analizador) analizarVars(DeclsVars *ast.DeclsVars, scope string) {
+	for _, decl := range DeclsVars.Decls {
+		tipo := decl.Tipo
 		for _, id := range decl.IDs {
 			//pide dirección de memoria
-			var dir int
-			if a.tabla.scopeActual == "global" {
-				if tipo == TipoFlotante {
-					dir = a.Mem.NextGlobalFloat()
-				} else {
-					dir = a.Mem.NextGlobalInt()
-				}
-			} else {
-				if tipo == TipoFlotante {
-					dir = a.Mem.NextLocalFloat()
-				} else {
-					dir = a.Mem.NextLocalInt()
-				}
-			}
 
 			//intenta agregar la variable a la tabla y si hay un error (como que ya existe) lo registra
-			if err := a.tabla.AgregarVar(id, tipo, dir); err != nil {
-				a.error(err.Error())
+			if err := a.tabla.AgregarVar(scope, id, tipo); err != nil {
+				a.errores = append(a.errores, err.Error())
 			}
 		}
 	}
@@ -93,67 +75,59 @@ func (a *Analizador) analizarVars(vars *ast.Vars) {
 
 // solo mete la función a la tabla sin analizar su cuerpo
 func (a *Analizador) registrarFirmaFunc(f *ast.Func) {
-	params := make([]EntradaVar, len(f.Params))
+	params := make([]VarEnDir, len(f.Params))
 	for i, p := range f.Params {
-		var dir int
-		if TipoDato(p.Tipo) == TipoFlotante {
-			dir = a.Mem.NextLocalFloat()
-		} else {
-			dir = a.Mem.NextLocalInt()
-		}
+		//falta asignar dir de memoria
 
-		params[i] = EntradaVar{
-			Nombre:    p.ID,
-			Tipo:      TipoDato(p.Tipo),
-			Direccion: dir,
+		params[i] = VarEnDir{
+			Nombre: p.ID,
+			Tipo:   p.Tipo,
+			//falta la dirección de memoria
 		}
 	}
-	if err := a.tabla.AgregarFunc(f.ID, TipoDato(f.TipoRetorno), params); err != nil {
-		a.error(err.Error())
+	if err := a.tabla.RegistrarFunc(f.ID, f.TipoRetorno, params); err != nil {
+		a.errores = append(a.errores)
 	}
 }
 
 func (a *Analizador) analizarFunc(f *ast.Func) {
-	//obtener los params registrados en la tabla
-	entrada, _ := a.tabla.BuscarFunc(f.ID)
-
-	//entrar al scope local con los parámetros ya dentro
-	snapshot := a.tabla.EntrarScope(f.ID, entrada.Parametros) // = map[string]EntradaVar
-
-	//agregar vars locales
+	//analizar parámetros ya se hizo en registrarFirmaFunc
+	//analizar vars locales
 	if f.Vars != nil {
-		a.analizarVars(f.Vars)
+		a.analizarVars(f.Vars, f.ID) //el segundo es el scope
 	}
 
 	//analizar el cuerpo
-	a.analizarCuerpo(f.Cuerpo)
+	a.analizarCuerpo(f.Cuerpo, f.ID)
 
 	//validar lo del retorno
-	if f.TipoRetorno == "nula" {
+	if f.TipoRetorno == "nulo" {
 		// función nula NO debe tener retornar
 		if f.Retorno != nil {
-			a.error(fmt.Sprintf(
-				"función '%s' es nula y no puede tener retornar", f.ID,
+			a.errores = append(a.errores, fmt.Sprintf(
+				"función '%s' es de tipo 'nulo' y no debe retornar un valor",
+				f.ID,
 			))
 		}
 	} else {
 		// función no nula SÍ debe tener retornar
 		if f.Retorno == nil {
-			a.error(fmt.Sprintf(
+			a.errores = append(a.errores, fmt.Sprintf(
 				"función '%s' debe retornar un valor de tipo '%s'",
 				f.ID, f.TipoRetorno,
 			))
 		} else {
-			// verifica que el id exista en el scope actual
-			varEntry, existe := a.tabla.BuscarVar(f.Retorno.ID)
+			// verifica que el id exista en el scope actual, o en el global
+			varEntry, existe := a.tabla.BuscarVar(f.Retorno.ID, f.ID)
 			if !existe {
-				a.error(fmt.Sprintf(
+				a.errores = append(a.errores, fmt.Sprintf(
 					"función '%s': variable '%s' en retornar no fue declarada",
 					f.ID, f.Retorno.ID,
 				))
+
 			} else if string(varEntry.Tipo) != f.TipoRetorno {
 				// verifica que el tipo coincida
-				a.error(fmt.Sprintf(
+				a.errores = append(a.errores, fmt.Sprintf(
 					"función '%s': retorna '%s' de tipo '%s' pero se esperaba '%s'",
 					f.ID, f.Retorno.ID, varEntry.Tipo, f.TipoRetorno,
 				))
@@ -161,59 +135,65 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 		}
 	}
 
-	//salir del scope
-	a.tabla.SalirScope(snapshot)
 }
 
 // CUERPO Y ESTATUTOS
-func (a *Analizador) analizarCuerpo(c *ast.Cuerpo) {
+
+// el cuerpo puede estar dentro de una función o en el programa principal, por eso se le pasa el scope
+func (a *Analizador) analizarCuerpo(c *ast.Cuerpo, scope string) {
 	for _, e := range c.Estatutos {
-		a.analizarEstatuto(e)
+		a.analizarEstatuto(e, scope)
 	}
 }
 
-func (a *Analizador) analizarEstatuto(e ast.Estatuto) { //estatuto es una interfaz
-	switch n := e.(type) {
+func (a *Analizador) analizarEstatuto(e ast.Estatuto, scope string) { //estatuto es una interfaz
+	switch tree := e.(type) {
 	case *ast.Asigna:
-		a.analizarAsigna(n)
+		a.analizarAsigna(tree, scope)
 	case *ast.Condicion:
-		a.analizarCondicion(n)
+		a.analizarCondicion(tree, scope)
 	case *ast.Ciclo:
-		a.analizarCiclo(n)
+		a.analizarCiclo(tree, scope)
 	case *ast.Llamada:
-		a.analizarLlamada(n)
+		a.analizarLlamada(tree, scope)
 	case *ast.Imprime:
-		a.analizarImprime(n)
+		a.analizarImprime(tree, scope)
 	case *ast.BloqueEstatutos:
-		for _, inner := range n.Estatutos {
-			a.analizarEstatuto(inner)
+		for _, inner := range tree.Estatutos {
+			a.analizarEstatuto(inner, scope)
 		}
 	}
 }
 
 // CADA TIPO DE ESTATUTO
-func (a *Analizador) analizarAsigna(n *ast.Asigna) {
+func (a *Analizador) analizarAsigna(n *ast.Asigna, scope string) {
 	//la variable debe estar declarada
-	if _, existe := a.tabla.BuscarVar(n.ID); !existe {
-		a.error(fmt.Sprintf("variable '%s' no fue declarada", n.ID))
+	if _, existe := a.tabla.BuscarVar(n.ID, scope); !existe {
+		a.errores = append(a.errores, fmt.Sprintf("variable '%s' no fue declarada", n.ID))
 	}
-	a.analizarExpresion(n.Expresion)
+
+	//checar que el tipo de la expresión coincida con el tipo de la variable
+	varEntry, _ := a.tabla.BuscarVar(n.ID, scope)
+	expType := a.analizarExpresion(n.Expresion)
+	if varEntry.Tipo != expType {
+		a.errores = append(a.errores, fmt.Sprintf("tipo de la expresión no coincide con el de la variable '%s'", n.ID))
+	}
 }
 
-func (a *Analizador) analizarCondicion(n *ast.Condicion) {
+func (a *Analizador) analizarCondicion(n *ast.Condicion, scope string) {
 	a.analizarExpresion(n.Expresion)
-	a.analizarCuerpo(n.CuerpoSi)
+	a.analizarCuerpo(n.CuerpoSi, scope)
 	if n.CuerpoSino != nil {
-		a.analizarCuerpo(n.CuerpoSino)
+		a.analizarCuerpo(n.CuerpoSino, scope)
 	}
 }
 
-func (a *Analizador) analizarCiclo(n *ast.Ciclo) {
+func (a *Analizador) analizarCiclo(n *ast.Ciclo, scope string) {
 	a.analizarExpresion(n.Expresion)
 	a.analizarCuerpo(n.Cuerpo)
 }
 
-func (a *Analizador) analizarLlamada(n *ast.Llamada) {
+func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) {
 	//la función debe estar declarada
 	entrada, existe := a.tabla.BuscarFunc(n.ID)
 	if !existe {
@@ -235,7 +215,7 @@ func (a *Analizador) analizarLlamada(n *ast.Llamada) {
 	}
 }
 
-func (a *Analizador) analizarImprime(n *ast.Imprime) {
+func (a *Analizador) analizarImprime(n *ast.Imprime, scope string) {
 	for _, item := range n.Items {
 		if !item.EsLetrero {
 			a.analizarExpresion(item.Expr)
@@ -246,11 +226,13 @@ func (a *Analizador) analizarImprime(n *ast.Imprime) {
 
 //EXPRESIONES
 
-func (a *Analizador) analizarExpresion(e *ast.Expresion) {
+// va a regresar el tipo de la expresión
+func (a *Analizador) analizarExpresion(e *ast.Expresion) string {
 	a.analizarExp(e.Izq)
 	if e.Der != nil {
 		a.analizarExp(e.Der)
 	}
+	return ""
 }
 
 func (a *Analizador) analizarExp(e *ast.Exp) {
