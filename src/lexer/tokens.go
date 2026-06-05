@@ -29,7 +29,7 @@ const (
 	P_SI
 	P_SINO
 	P_ESCRIBE
-	P_NULA
+	P_NULO
 	P_RETORNAR
 
 	//Operadores
@@ -110,8 +110,8 @@ func TokenKindString(kind TokenKind) string {
 		return "sino"
 	case P_ESCRIBE:
 		return "escribe"
-	case P_NULA:
-		return "nula"
+	case P_NULO:
+		return "nulo"
 	case P_RETORNAR:
 		return "retornar"
 

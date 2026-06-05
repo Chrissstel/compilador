@@ -139,7 +139,7 @@ func (p *Parser) parseF() []*ast.Func {
 
 func (p *Parser) esInicioFunc() bool {
 	k := p.current().Kind
-	return k == lexer.P_NULA || k == lexer.P_ENTERO || k == lexer.P_FLOTANTE
+	return k == lexer.P_NULO || k == lexer.P_ENTERO || k == lexer.P_FLOTANTE
 }
 
 // <FUNCS> → <DEF_FUNC> id ( (<PARAM> (, <PARAM>)*)? ) { <VARS>? <CUERPO> <RETORNO>? } ;
@@ -177,11 +177,11 @@ func (p *Parser) parseRetorno() *ast.Retorno {
 	return nil
 }
 
-// <DEF_FUNC> → nula | entero | flotante
+// <DEF_FUNC> → nulo | entero | flotante
 func (p *Parser) parseDefFunc() string {
-	if p.check(lexer.P_NULA) {
+	if p.check(lexer.P_NULO) {
 		p.advance()
-		return "nula"
+		return "nulo"
 	}
 	return p.parseTipo()
 }

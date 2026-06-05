@@ -86,7 +86,7 @@ func (a *Analizador) registrarFirmaFunc(f *ast.Func) {
 		}
 	}
 	if err := a.tabla.RegistrarFunc(f.ID, f.TipoRetorno, params); err != nil {
-		a.errores = append(a.errores)
+		a.errores = append(a.errores, err.Error())
 	}
 }
 
@@ -223,6 +223,12 @@ func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) string {
 	//analizar cada argumento y validar que coincida con su parámetro
 	for i, arg := range n.Args {
 		argType := a.analizarExpresion(arg, scope)
+
+		// Si hay más argumentos que parámetros, saltamos la validación del tipo
+		if i >= len(entrada.Params) {
+			continue
+		}
+
 		paramName := entrada.Params[i]
 
 		//checamos que el tipo del argumento coincida con el tipo del parámetro
