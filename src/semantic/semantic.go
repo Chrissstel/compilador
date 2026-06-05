@@ -186,7 +186,7 @@ func (a *Analizador) analizarAsigna(n *ast.Asigna, scope string) {
 func (a *Analizador) analizarCondicion(n *ast.Condicion, scope string) {
 	tipo := a.analizarExpresion(n.Expresion, scope)
 	if tipo != "entero" && tipo != "flotante" {
-		a.errores = append(a.errores, fmt.Sprintf("la expresión en la condición debe ser de tipo 'booleano'"))
+		a.errores = append(a.errores, "la expresión en la condición debe ser de tipo 'booleano'")
 	}
 	a.analizarCuerpo(n.CuerpoSi, scope)
 	if n.CuerpoSino != nil {
@@ -198,7 +198,7 @@ func (a *Analizador) analizarCiclo(n *ast.Ciclo, scope string) {
 	//checar que la expresión sea de tipo "booleana"
 	tipo := a.analizarExpresion(n.Expresion, scope)
 	if tipo != "entero" && tipo != "flotante" {
-		a.errores = append(a.errores, fmt.Sprintf("la expresión en el ciclo debe ser de tipo 'booleano'"))
+		a.errores = append(a.errores, "la expresión en el ciclo debe ser de tipo 'booleano'")
 	}
 	a.analizarCuerpo(n.Cuerpo, scope)
 }
@@ -248,7 +248,7 @@ func (a *Analizador) analizarImprime(n *ast.Imprime, scope string) {
 			//checar que no sea de tipo nula la expresión
 			expType := a.analizarExpresion(item.Expr, scope)
 			if expType == "nulo" {
-				a.errores = append(a.errores, fmt.Sprintf("no se puede imprimir una expresión de tipo 'nulo'"))
+				a.errores = append(a.errores, "no se puede imprimir una expresión de tipo 'nulo'")
 			}
 		}
 		//si sí es letrero no hay nada que verificar
@@ -264,10 +264,11 @@ func (a *Analizador) analizarExpresion(e *ast.Expresion, scope string) string {
 		tipoDer := a.analizarExp(e.Der, scope)
 		//checar que los tipos sean compatibles con el operador
 		//CHECAR MAS DETALLADAMENTE CON EL CUBO SEMANTICO
-		if tipoIzq != tipoDer {
-			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipoIzq, tipoDer))
+		tipo, err := SemanticCube(tipoIzq, tipoDer, e.Op)
+		if err != nil {
+			a.errores = append(a.errores, err.Error())
 		}
-
+		return tipo
 	}
 	return tipoIzq
 }
@@ -276,23 +277,28 @@ func (a *Analizador) analizarExp(e *ast.Exp, scope string) string {
 	tipoIzq := a.analizarTermino(e.Termino, scope)
 	if e.Der != nil {
 		tipoDer := a.analizarExp(e.Der, scope)
-		if tipoIzq != tipoDer {
-			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipoIzq, tipoDer))
+		//CHECAR DETALLADAMENTE CON EL CUBO SEMANTICO
+		tipo, err := SemanticCube(tipoIzq, tipoDer, e.Op)
+		if err != nil {
+			a.errores = append(a.errores, err.Error())
 		}
+		return tipo
 	}
 	return tipoIzq
 }
 
 func (a *Analizador) analizarTermino(t *ast.Termino, scope string) string {
-	tipo := a.analizarFactor(t.Factor, scope)
+	tipoIzq := a.analizarFactor(t.Factor, scope)
 	if t.Der != nil {
 		tipoDer := a.analizarTermino(t.Der, scope)
 		//CHECAR MAS DETALLADAMENTE CON EL CUBO SEMANTICO
-		if tipo != tipoDer {
-			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipo, tipoDer))
+		tipo, err := SemanticCube(tipoIzq, tipoDer, t.Op)
+		if err != nil {
+			a.errores = append(a.errores, err.Error())
 		}
+		return tipo
 	}
-	return tipo
+	return tipoIzq
 }
 
 func (a *Analizador) analizarFactor(f *ast.Factor, scope string) string {

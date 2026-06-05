@@ -1,4 +1,4 @@
-package codegen
+package semantic
 
 import "fmt"
 
@@ -22,7 +22,7 @@ func SemanticCube(left, right, op string) (string, error) {
 		return "entero", nil
 
 	//relacionales
-	//siempre es entero (nuestro booleano)
+	//siempre es entero (mi booleano)
 	case ">", "<", "==", "!=":
 		return "entero", nil
 	}
