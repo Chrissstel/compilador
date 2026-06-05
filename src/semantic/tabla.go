@@ -26,8 +26,10 @@ type VarEnDir struct {
 type FuncEnDir struct {
 	Nombre      string //aqui igual va a estar doble el nombre, pero por lo mismo
 	TipoRetorno string
-	Variables   map[string]VarEnDir //van a ser tanto parámetros como variables declaradas
-	Recursos    int                 //cantidad de recursos que usa
+	//solo va a ser el nombre y van a estar en orden
+	Params    []string            //esto es para validar las llamadas a funciones
+	Variables map[string]VarEnDir //van a ser tanto parámetros como variables declaradas
+	Recursos  int                 //cantidad de recursos que usa
 }
 
 // TABLA
@@ -64,6 +66,23 @@ func (t *TablaSimbolos) AgregarVar(scope string, id string, tipo string) error {
 	//aumentar la cantidad de recursos por funcion
 	t.funciones[scope].Recursos++
 
+	return nil
+}
+
+//Para agregar los parametros a cada funcion
+//Solo es para distinguir entre params y variables
+//se van a añadir en orden
+func (t *TablaSimbolos) AgregarParam(scope string, id string) error {
+	// Implementación para agregar parámetro
+	funcDir := t.funciones[scope] //es una FuncEnDir
+	//checar si el parámetro ya existe
+	for _, param := range funcDir.Params {
+		if param == id {
+			return fmt.Errorf("Error semántico: parámetro '%s' ya declarado en la función '%s'", id, scope)
+		}
+	}
+	funcDir.Params = append(funcDir.Params, id)
+	t.funciones[scope] = funcDir
 	return nil
 }
 
@@ -108,13 +127,23 @@ func (t *TablaSimbolos) RegistrarFunc(id string, tipoRetorno string, params []Va
 	}
 
 	//agregar los parámetros como variables de la función
+	//y también se guardan en params para validar las llamadas a funciones
 	for _, param := range params {
 		if err := t.AgregarVar(id, param.Nombre, param.Tipo); err != nil {
+			return err
+		}
+		if err := t.AgregarParam(id, param.Nombre); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+//PARA BUSCAR FUNCIONES
+func (t *TablaSimbolos) BuscarFunc(id string) (*FuncEnDir, bool) {
+	funcDir, exists := t.funciones[id]
+	return funcDir, exists
 }
 
 //DEBUG

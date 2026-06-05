@@ -1,5 +1,6 @@
 package codegen
 
+/*
 import (
 	"compilador/src/ast"
 	"compilador/src/memory"
@@ -379,3 +380,5 @@ func (g *Generator) resolveOp() {
 	})
 	g.Operands.Push(temp)
 }
+
+*/

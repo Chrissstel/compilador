@@ -4,8 +4,8 @@ import "fmt"
 
 func (p *Programa) Print() {
 	fmt.Printf("Programa: %s\n", p.ID)
-	if p.Vars != nil {
-		p.Vars.print("├── ")
+	if p.DeclsVars != nil {
+		p.DeclsVars.print("├── ")
 	}
 	for i, f := range p.Funcs {
 		prefix := "├── "
@@ -17,14 +17,14 @@ func (p *Programa) Print() {
 	p.Cuerpo.print("└── ", "    ")
 }
 
-func (v *Vars) print(prefix string) {
+func (dv *DeclsVars) print(prefix string) {
 	fmt.Printf("%sVars\n", prefix)
-	for i, d := range v.Declaraciones {
-		p := "│   ├── "
-		if i == len(v.Declaraciones)-1 {
-			p = "│   └── "
+	for i, v := range dv.Decls {
+		p := prefix + "├── "
+		if i == len(dv.Decls)-1 {
+			p = prefix + "└── "
 		}
-		fmt.Printf("%sDecl [%s] : %s\n", p, joinIDs(d.IDs), d.Tipo)
+		fmt.Printf("%sDecl [%s] : %s\n", p, joinIDs(v.IDs), v.Tipo)
 	}
 }
 

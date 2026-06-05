@@ -32,7 +32,7 @@ func (a *Analizador) AnalizarPrograma(prog *ast.Programa) {
 	a.tabla.funciones["global"] = &FuncEnDir{
 		Nombre:      "global",
 		TipoRetorno: "nula",
-		Variables:   nil,
+		Variables:   make(map[string]VarEnDir),
 		Recursos:    0,
 	}
 
@@ -174,14 +174,20 @@ func (a *Analizador) analizarAsigna(n *ast.Asigna, scope string) {
 
 	//checar que el tipo de la expresión coincida con el tipo de la variable
 	varEntry, _ := a.tabla.BuscarVar(n.ID, scope)
-	expType := a.analizarExpresion(n.Expresion)
+	expType := a.analizarExpresion(n.Expresion, scope)
 	if varEntry.Tipo != expType {
 		a.errores = append(a.errores, fmt.Sprintf("tipo de la expresión no coincide con el de la variable '%s'", n.ID))
 	}
 }
 
+// la expresion tiene que ser de tipo booleana
+// pero aquí el 0 es falso y cualquier otro int es verdadero
+// tal vez tambien pueda ser flotante
 func (a *Analizador) analizarCondicion(n *ast.Condicion, scope string) {
-	a.analizarExpresion(n.Expresion)
+	tipo := a.analizarExpresion(n.Expresion, scope)
+	if tipo != "entero" && tipo != "flotante" {
+		a.errores = append(a.errores, fmt.Sprintf("la expresión en la condición debe ser de tipo 'booleano'"))
+	}
 	a.analizarCuerpo(n.CuerpoSi, scope)
 	if n.CuerpoSino != nil {
 		a.analizarCuerpo(n.CuerpoSino, scope)
@@ -189,36 +195,55 @@ func (a *Analizador) analizarCondicion(n *ast.Condicion, scope string) {
 }
 
 func (a *Analizador) analizarCiclo(n *ast.Ciclo, scope string) {
-	a.analizarExpresion(n.Expresion)
-	a.analizarCuerpo(n.Cuerpo)
+	//checar que la expresión sea de tipo "booleana"
+	tipo := a.analizarExpresion(n.Expresion, scope)
+	if tipo != "entero" && tipo != "flotante" {
+		a.errores = append(a.errores, fmt.Sprintf("la expresión en el ciclo debe ser de tipo 'booleano'"))
+	}
+	a.analizarCuerpo(n.Cuerpo, scope)
 }
 
-func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) {
+// tiene que regresar un tipo, aunque sea nula
+func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) string {
 	//la función debe estar declarada
 	entrada, existe := a.tabla.BuscarFunc(n.ID)
 	if !existe {
-		a.error(fmt.Sprintf("función '%s' no fue declarada", n.ID))
-		return
+		a.errores = append(a.errores, fmt.Sprintf("función '%s' no fue declarada", n.ID))
+		return "nulo"
 	}
 
 	//el número de argumentos debe coincidir
-	if len(n.Args) != len(entrada.Parametros) {
-		a.error(fmt.Sprintf(
+	if len(n.Args) != len(entrada.Params) {
+		a.errores = append(a.errores, fmt.Sprintf(
 			"función '%s' espera %d argumento(s) pero recibió %d",
-			n.ID, len(entrada.Parametros), len(n.Args),
+			n.ID, len(entrada.Params), len(n.Args),
 		))
 	}
 
-	//analizar cada argumento
-	for _, arg := range n.Args {
-		a.analizarExpresion(arg)
+	//analizar cada argumento y validar que coincida con su parámetro
+	for i, arg := range n.Args {
+		argType := a.analizarExpresion(arg, scope)
+		paramName := entrada.Params[i]
+
+		//checamos que el tipo del argumento coincida con el tipo del parámetro
+		if argType != entrada.Variables[paramName].Tipo {
+			a.errores = append(a.errores, fmt.Sprintf(
+				"en la llamada a '%s', el argumento %d es de tipo '%s' pero se esperaba '%s'",
+				n.ID, i+1, argType, entrada.Variables[paramName].Tipo,
+			))
+		}
 	}
+	return entrada.TipoRetorno
 }
 
 func (a *Analizador) analizarImprime(n *ast.Imprime, scope string) {
 	for _, item := range n.Items {
 		if !item.EsLetrero {
-			a.analizarExpresion(item.Expr)
+			//checar que no sea de tipo nula la expresión
+			expType := a.analizarExpresion(item.Expr, scope)
+			if expType == "nulo" {
+				a.errores = append(a.errores, fmt.Sprintf("no se puede imprimir una expresión de tipo 'nulo'"))
+			}
 		}
 		//si sí es letrero no hay nada que verificar
 	}
@@ -227,51 +252,114 @@ func (a *Analizador) analizarImprime(n *ast.Imprime, scope string) {
 //EXPRESIONES
 
 // va a regresar el tipo de la expresión
-func (a *Analizador) analizarExpresion(e *ast.Expresion) string {
-	a.analizarExp(e.Izq)
+func (a *Analizador) analizarExpresion(e *ast.Expresion, scope string) string {
+	tipoIzq := a.analizarExp(e.Izq, scope)
 	if e.Der != nil {
-		a.analizarExp(e.Der)
+		tipoDer := a.analizarExp(e.Der, scope)
+		//checar que los tipos sean compatibles con el operador
+		//CHECAR MAS DETALLADAMENTE CON EL CUBO SEMANTICO
+		if tipoIzq != tipoDer {
+			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipoIzq, tipoDer))
+		}
+
 	}
-	return ""
+	return tipoIzq
 }
 
-func (a *Analizador) analizarExp(e *ast.Exp) {
-	a.analizarTermino(e.Termino)
+func (a *Analizador) analizarExp(e *ast.Exp, scope string) string {
+	tipoIzq := a.analizarTermino(e.Termino, scope)
 	if e.Der != nil {
-		a.analizarExp(e.Der)
-	}
-}
-
-func (a *Analizador) analizarTermino(t *ast.Termino) {
-	a.analizarFactor(t.Factor)
-	if t.Der != nil {
-		a.analizarTermino(t.Der)
-	}
-}
-
-func (a *Analizador) analizarFactor(f *ast.Factor) {
-	switch {
-	case f.Expr != nil:
-		a.analizarExpresion(f.Expr)
-
-	case f.Llamada != nil:
-		a.analizarLlamada(f.Llamada)
-
-	case f.Valor != nil:
-		a.analizarValor(f.Valor)
-	}
-}
-
-func (a *Analizador) analizarValor(v *ast.Valor) {
-	//si es un ID debe estar declarado
-	if !v.EsCte {
-		if _, existe := a.tabla.BuscarVar(v.ID); !existe {
-			a.error(fmt.Sprintf("variable '%s' no fue declarada", v.ID))
+		tipoDer := a.analizarExp(e.Der, scope)
+		if tipoIzq != tipoDer {
+			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipoIzq, tipoDer))
 		}
 	}
-	//si es constante no hay nada que verificar
+	return tipoIzq
 }
 
-func (a *Analizador) ObtenerTabla() *TablaSimbolos {
-	return a.tabla
+func (a *Analizador) analizarTermino(t *ast.Termino, scope string) string {
+	tipo := a.analizarFactor(t.Factor, scope)
+	if t.Der != nil {
+		tipoDer := a.analizarTermino(t.Der, scope)
+		//CHECAR MAS DETALLADAMENTE CON EL CUBO SEMANTICO
+		if tipo != tipoDer {
+			a.errores = append(a.errores, fmt.Sprintf("tipos incompatibles en la expresión: '%s' vs '%s'", tipo, tipoDer))
+		}
+	}
+	return tipo
+}
+
+func (a *Analizador) analizarFactor(f *ast.Factor, scope string) string {
+	var tipo string
+	switch {
+	case f.Expr != nil:
+		tipo = a.analizarExpresion(f.Expr, scope)
+	case f.Llamada != nil:
+		tipo = a.analizarLlamada(f.Llamada, scope)
+
+	case f.Valor != nil:
+		tipo = a.analizarValor(f.Valor, scope)
+	}
+	return tipo
+}
+
+func (a *Analizador) analizarValor(v *ast.Valor, scope string) string {
+	var tipo string
+	//si es un ID debe estar declarado
+	if !v.EsCte {
+		if varEntry, existe := a.tabla.BuscarVar(v.ID, scope); !existe {
+			a.errores = append(a.errores, fmt.Sprintf("variable '%s' no fue declarada", v.ID))
+		} else {
+			tipo = varEntry.Tipo
+		}
+	} else {
+		//si es constante, el tipo depende de si es int o float
+		if v.CteEnt != nil {
+			tipo = "entero"
+		} else {
+			tipo = "flotante"
+		}
+	}
+
+	return tipo
+}
+
+//PARA IMPRIMIR ERRORES Y TABLA
+
+// checa si hay errores registrados
+func (a *Analizador) HayErrores() bool {
+	return len(a.errores) > 0
+}
+
+func (a *Analizador) ImprimirErrores() {
+	fmt.Println("\n=== Errores semánticos ===")
+	for _, err := range a.errores {
+		fmt.Println("- " + err)
+	}
+}
+
+func (a *Analizador) ImprimirTabla() {
+	fmt.Println("\n=== Tabla de símbolos ===")
+	for funcName, funcEntry := range a.tabla.funciones {
+		fmt.Printf("Función '%s' (retorna '%s'):\n", funcName, funcEntry.TipoRetorno)
+		if len(funcEntry.Params) > 0 {
+			fmt.Println("  Parámetros:")
+			for _, param := range funcEntry.Params {
+				varEntry := funcEntry.Variables[param]
+				fmt.Printf("    - %s: %s\n", varEntry.Nombre, varEntry.Tipo)
+			}
+		} else {
+			fmt.Println("  Sin parámetros")
+		}
+		if len(funcEntry.Variables) > 0 {
+			fmt.Println("  Variables locales:")
+			for varName, varEntry := range funcEntry.Variables {
+				fmt.Printf("    - %s: %s\n", varName, varEntry.Tipo)
+			}
+		} else {
+			fmt.Println("  Sin variables locales")
+		}
+		fmt.Printf("  Recursos usados: %d\n", funcEntry.Recursos)
+		fmt.Println()
+	}
 }

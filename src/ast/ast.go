@@ -108,19 +108,19 @@ type Expresion struct {
 type Exp struct {
 	Termino *Termino
 	Op      string
-	Der     *Exp
+	Der     *Exp //nil si no hay op
 }
 
 type Termino struct {
 	Factor *Factor
 	Op     string
-	Der    *Termino
+	Der    *Termino //nil si no hay op
 }
 
 type Factor struct {
 	Expr    *Expresion
 	Llamada *Llamada
-	Signo   string
+	Signo   string //puede ser -,+ o vacío
 	Valor   *Valor
 }
 

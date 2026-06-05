@@ -1,7 +1,6 @@
 package main
 
 import (
-	"compilador/src/codegen"
 	"compilador/src/lexer"
 	"compilador/src/memory"
 	"compilador/src/parser"
@@ -15,7 +14,7 @@ import (
 func main() {
 
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./testdata/completo.patito") //o completo.patito
+	src, err := os.ReadFile("./testdata/01.patito") //o completo.patito
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +39,6 @@ func main() {
 	analizador.AnalizarPrograma(programa)
 
 	if analizador.HayErrores() {
-		fmt.Println("\n=== Errores semánticos ===")
 		analizador.ImprimirErrores()
 		os.Exit(1)
 	}
@@ -48,9 +46,11 @@ func main() {
 	fmt.Println("\nAnálisis semántico correcto")
 	analizador.ImprimirTabla()
 
-	//Generación de cuadruplos
-	gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
-	gen.Visit(programa)
-	gen.PrintQuads()
+	/*
+		//Generación de cuadruplos
+		gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
+		gen.Visit(programa)
+		gen.PrintQuads()
+	*/
 
 }
