@@ -33,8 +33,9 @@ func main() {
 	fmt.Printf("\nPrograma '%s' parseado\n", programa.ID)
 	programa.Print()
 
-	//Semántico
+	//Semántico y CodeGen
 	mem := memory.NewMemoryManager()
+	//el analizador también va a generar cuádruplos
 	analizador := semantic.NuevoAnalizador(mem)
 	analizador.AnalizarPrograma(programa)
 
@@ -46,11 +47,7 @@ func main() {
 	fmt.Println("\nAnálisis semántico correcto")
 	analizador.ImprimirTabla()
 
-	/*
-		//Generación de cuadruplos
-		gen := codegen.NewGenerator(mem, analizador.ObtenerTabla())
-		gen.Visit(programa)
-		gen.PrintQuads()
-	*/
+	//Mostrar cuádruplos
+	analizador.Generador.PrintQuads()
 
 }

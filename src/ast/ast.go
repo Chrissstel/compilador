@@ -120,7 +120,6 @@ type Termino struct {
 type Factor struct {
 	Expr    *Expresion
 	Llamada *Llamada
-	Signo   string //puede ser -,+ o vacío
 	Valor   *Valor
 }
 
@@ -129,4 +128,5 @@ type Valor struct {
 	ID      string //si !EsCte
 	CteEnt  *int
 	CteFlot *float64
+	Signo   string //puede ser -,+ o vacío
 }

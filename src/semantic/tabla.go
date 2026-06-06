@@ -4,16 +4,6 @@ package semantic
 
 import "fmt"
 
-//type TipoDato string //tipos de entrada en la tabla
-
-/*
-const (
-	TipoEntero   TipoDato = "entero"
-	TipoFlotante TipoDato = "flotante"
-	TipoNulo     TipoDato = "nulo"
-)
-*/
-
 // puede ser una variable o parámetro
 type VarEnDir struct {
 	Nombre string //va a estar doble el nombre de la variable, pero es para facilitar la búsqueda
@@ -30,6 +20,8 @@ type FuncEnDir struct {
 	Params    []string            //esto es para validar las llamadas a funciones
 	Variables map[string]VarEnDir //van a ser tanto parámetros como variables declaradas
 	Recursos  int                 //cantidad de recursos que usa
+
+	StartQuad int //índice del primer cuádruplo de la función
 }
 
 // TABLA
@@ -46,7 +38,7 @@ func NuevaTabla() *TablaSimbolos {
 }
 
 //PARA AGREGAR VARIABLES
-func (t *TablaSimbolos) AgregarVar(scope string, id string, tipo string) error {
+func (t *TablaSimbolos) AgregarVar(scope string, id string, tipo string, dir int) error {
 	// Implementación para agregar variable
 	funcDir := t.funciones[scope] //es una FuncEnDir
 
@@ -58,7 +50,8 @@ func (t *TablaSimbolos) AgregarVar(scope string, id string, tipo string) error {
 	funcDir.Variables[id] = VarEnDir{
 		Nombre: id,
 		Tipo:   tipo,
-		// Falta asignar memoria
+		// asignar memoria
+		Direccion: dir,
 	}
 
 	t.funciones[scope] = funcDir
@@ -129,7 +122,7 @@ func (t *TablaSimbolos) RegistrarFunc(id string, tipoRetorno string, params []Va
 	//agregar los parámetros como variables de la función
 	//y también se guardan en params para validar las llamadas a funciones
 	for _, param := range params {
-		if err := t.AgregarVar(id, param.Nombre, param.Tipo); err != nil {
+		if err := t.AgregarVar(id, param.Nombre, param.Tipo, param.Direccion); err != nil {
 			return err
 		}
 		if err := t.AgregarParam(id, param.Nombre); err != nil {

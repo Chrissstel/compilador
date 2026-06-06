@@ -398,7 +398,7 @@ func (p *Parser) parseTermino() *ast.Termino {
 	return raiz
 }
 
-// <FACTOR> → ( <EXPRESION> ) | <LLAMADA> | (+ | -)? (id | cte_ent | cte_flot)
+// <FACTOR> → ( <EXPRESION> ) | <LLAMADA> | <VALOR>
 func (p *Parser) parseFactor() *ast.Factor {
 	// ( <EXPRESION> )
 	if p.check(lexer.ABRE_PAREN) {
@@ -413,31 +413,31 @@ func (p *Parser) parseFactor() *ast.Factor {
 		return &ast.Factor{Llamada: p.parseLlamada()}
 	}
 
-	// (+ | -)? (id | cte_ent | cte_flot)
+	// <VALOR>: puede ser id o constante
+	return &ast.Factor{Valor: p.parseValor()}
+}
+
+// <VALOR> → (+ | -)? (id | cte_ent | cte_flot)
+func (p *Parser) parseValor() *ast.Valor {
 	signo := ""
 	if p.check(lexer.MAS) || p.check(lexer.MENOS) {
 		signo = p.advance().Value
 	}
-	return &ast.Factor{Signo: signo, Valor: p.parseValor()}
-}
 
-// <VALOR> → id | cte_ent | cte_flot
-func (p *Parser) parseValor() *ast.Valor {
 	t := p.current()
 	switch t.Kind {
 	case lexer.IDENTIFICADOR:
 		p.advance()
-		return &ast.Valor{ID: t.Value}
+		return &ast.Valor{ID: t.Value, Signo: signo, EsCte: false}
 
 	case lexer.CTE_ENTERO:
 		p.advance()
 		v, _ := strconv.Atoi(t.Value)
-		return &ast.Valor{EsCte: true, CteEnt: &v}
-
+		return &ast.Valor{EsCte: true, CteEnt: &v, Signo: signo}
 	case lexer.CTE_FLOTANTE:
 		p.advance()
 		v, _ := strconv.ParseFloat(t.Value, 64)
-		return &ast.Valor{EsCte: true, CteFlot: &v}
+		return &ast.Valor{EsCte: true, CteFlot: &v, Signo: signo}
 	}
 
 	panic(fmt.Sprintf(

@@ -153,7 +153,7 @@ func factorStr(f *Factor) string {
 	if f.Llamada != nil {
 		return f.Llamada.ID + "(...)"
 	}
-	return f.Signo + valorStr(f.Valor)
+	return valorStr(f.Valor)
 }
 
 func valorStr(v *Valor) string {
@@ -161,13 +161,13 @@ func valorStr(v *Valor) string {
 		return "?"
 	}
 	if !v.EsCte {
-		return v.ID
+		return v.Signo + v.ID
 	}
 	if v.CteEnt != nil {
-		return fmt.Sprintf("%d", *v.CteEnt)
+		return v.Signo + fmt.Sprintf("%d", *v.CteEnt)
 	}
 	if v.CteFlot != nil {
-		return fmt.Sprintf("%g", *v.CteFlot)
+		return v.Signo + fmt.Sprintf("%g", *v.CteFlot)
 	}
 	return "?"
 }

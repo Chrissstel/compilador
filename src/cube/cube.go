@@ -1,4 +1,4 @@
-package semantic
+package cube
 
 import "fmt"
 

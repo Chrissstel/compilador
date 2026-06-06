@@ -1,35 +1,7 @@
 package codegen
 
 /*
-import (
-	"compilador/src/ast"
-	"compilador/src/memory"
-	"compilador/src/semantic"
-	"fmt"
-)
-
-type Generator struct {
-	Operands  Stack[Operand]
-	Operators Stack[string]
-	Jumps     Stack[int]
-	Quads     []Quadruple //decidí mejor usar una slice y no una cola
-	Mem       *memory.MemoryManager
-
-	//usamos la tabla de símbolos para que consulte la dir de memoria
-	Tabla     *semantic.TablaSimbolos
-	FuncStart map[string]int // nombre → índice del primer quad de la función
-}
-
-func NewGenerator(mem *memory.MemoryManager, tabla *semantic.TablaSimbolos) *Generator {
-	return &Generator{
-		Quads:     make([]Quadruple, 0),
-		Mem:       mem,
-		Tabla:     tabla,
-		FuncStart: make(map[string]int),
-	}
-}
-
-// para agregar un cuádruplo a la slice
+// para agregar un cuádruplo
 func (g *Generator) Emit(q Quadruple) {
 	g.Quads = append(g.Quads, q)
 }
