@@ -165,8 +165,8 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 				a.Generador.EmitQuad("RETURN", varEntry.Direccion, 0, 0)
 			}
 		}
-		a.Generador.EmitQuad("ENDFUNC", 0, 0, 0)
 	}
+	a.Generador.EmitQuad("ENDFUNC", 0, 0, 0)
 
 }
 
@@ -504,4 +504,8 @@ func (a *Analizador) ImprimirTabla() {
 		fmt.Printf("  Recursos usados: %d\n", funcEntry.Recursos)
 		fmt.Println()
 	}
+}
+
+func (a *Analizador) Errores() []string {
+	return a.errores
 }
