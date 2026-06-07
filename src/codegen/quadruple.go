@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	stack "compilador/src"
 	"compilador/src/cube"
 	"compilador/src/memory"
 	"fmt"
@@ -22,9 +23,9 @@ type Quadruple struct {
 }
 
 type QuadGenerator struct {
-	Operands  Stack[Operand] //es operand para ahorrarnos la pila de tipos y dirs por separado
-	Operators Stack[string]
-	Jumps     Stack[int]
+	Operands  stack.Stack[Operand] //es operand para ahorrarnos la pila de tipos y dirs por separado
+	Operators stack.Stack[string]
+	Jumps     stack.Stack[int]
 	Quads     []Quadruple
 	Mem       *memory.MemoryManager
 

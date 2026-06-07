@@ -141,3 +141,16 @@ func (m *MemoryManager) GetDirConstString(value string) int {
 	m.constStringMap[value] = dir
 	return dir
 }
+
+// Función para cargar las constantes en la memoria de ejecución antes de correr la VM
+func (m *MemoryManager) CargarConstantes(rt *RuntimeMemory) {
+	for valor, dir := range m.constIntMap {
+		rt.consts[dir] = valor
+	}
+	for valor, dir := range m.constFloatMap {
+		rt.consts[dir] = valor
+	}
+	for valor, dir := range m.constStringMap {
+		rt.consts[dir] = valor
+	}
+}

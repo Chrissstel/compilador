@@ -5,6 +5,7 @@ import (
 	"compilador/src/memory"
 	"compilador/src/parser"
 	"compilador/src/semantic"
+	"compilador/src/vm"
 
 	//"compilador/src/parser"
 	"fmt"
@@ -49,5 +50,9 @@ func main() {
 
 	//Mostrar cuádruplos
 	analizador.Generador.PrintQuads()
+
+	//Máquina virtual
+	vm := vm.NewVM(analizador.Generador.Quads, mem)
+	vm.Run()
 
 }

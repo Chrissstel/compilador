@@ -278,22 +278,22 @@ func (a *Analizador) analizarCiclo(n *ast.Ciclo, scope string) {
 // tiene que regresar un tipo, aunque sea nula
 func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) string {
 	//la función debe estar declarada
-	entrada, existe := a.Tabla.BuscarFunc(n.ID)
+	funcion, existe := a.Tabla.BuscarFunc(n.ID)
 	if !existe {
 		a.errores = append(a.errores, fmt.Sprintf("función '%s' no fue declarada", n.ID))
 		return "nulo"
 	}
 
 	//el número de argumentos debe coincidir
-	if len(n.Args) != len(entrada.Params) {
+	if len(n.Args) != len(funcion.Params) {
 		a.errores = append(a.errores, fmt.Sprintf(
 			"función '%s' espera %d argumento(s) pero recibió %d",
-			n.ID, len(entrada.Params), len(n.Args),
+			n.ID, len(funcion.Params), len(n.Args),
 		))
 	}
 
 	//ERA - reservamos espacio para la función
-	rec := entrada.Recursos
+	rec := funcion.Recursos
 	a.Generador.EmitQuad("ERA", rec, 0, 0) //puse directamente la cantidad de recursos
 
 	//analizar cada argumento y validar que coincida con su parámetro
@@ -301,31 +301,41 @@ func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) string {
 		argType := a.analizarExpresion(arg, scope)
 
 		// Si hay más argumentos que parámetros, saltamos la validación del tipo
-		if i < len(entrada.Params) {
-			paramName := entrada.Params[i]
+		if i < len(funcion.Params) {
+			paramName := funcion.Params[i]
 			//checamos que el tipo del argumento coincida con el tipo del parámetro
-			if argType != entrada.Variables[paramName].Tipo {
+			if argType != funcion.Variables[paramName].Tipo {
 				a.errores = append(a.errores, fmt.Sprintf(
 					"en la llamada a '%s', el argumento %d es de tipo '%s' pero se esperaba '%s'",
-					n.ID, i+1, argType, entrada.Variables[paramName].Tipo,
+					n.ID, i+1, argType, funcion.Variables[paramName].Tipo,
 				))
 			}
 		}
 		param := a.Generador.Operands.Pop()
-		a.Generador.EmitQuad("PARAM", param.Address, 0, i) //i es la posición del param
+
+		// Obtener la dirección del parámetro
+		var paramDir int
+		if i < len(funcion.Params) {
+			paramName := funcion.Params[i]
+			paramDir = funcion.Variables[paramName].Direccion
+		}
+
+		a.Generador.EmitQuad("PARAM", param.Address, 0, paramDir)
 	}
 
-	inicio := entrada.StartQuad
+	inicio := funcion.StartQuad
 	a.Generador.EmitQuad("GOSUB", 0, 0, inicio)
 
 	//aqui ya no me acordaba si usé nulo o nula
-	if entrada.TipoRetorno != "nula" && entrada.TipoRetorno != "nulo" {
-		temp := a.Mem.GetDirTemp(entrada.TipoRetorno)
-		a.Generador.EmitQuad("RETURN", 0, 0, temp)
-		a.Generador.Operands.Push(codegen.Operand{Address: temp, Type: entrada.TipoRetorno})
+	if funcion.TipoRetorno != "nula" && funcion.TipoRetorno != "nulo" {
+		// Usar dirección global en lugar de temporal, porque el valor de retorno
+		// se necesita guardar después de ENDFUNC cuando el stack está vacío
+		temp := a.Mem.GetDirGlobal(funcion.TipoRetorno)
+		a.Generador.EmitQuad("GETRETURN", 0, 0, temp)
+		a.Generador.Operands.Push(codegen.Operand{Address: temp, Type: funcion.TipoRetorno})
 	}
 
-	return entrada.TipoRetorno
+	return funcion.TipoRetorno
 }
 
 func (a *Analizador) analizarImprime(n *ast.Imprime, scope string) {
