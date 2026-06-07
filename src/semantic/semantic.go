@@ -330,7 +330,7 @@ func (a *Analizador) analizarLlamada(n *ast.Llamada, scope string) string {
 	if funcion.TipoRetorno != "nula" && funcion.TipoRetorno != "nulo" {
 		// Usar dirección global en lugar de temporal, porque el valor de retorno
 		// se necesita guardar después de ENDFUNC cuando el stack está vacío
-		temp := a.Mem.GetDirGlobal(funcion.TipoRetorno)
+		temp := a.Mem.GetDirTemp(funcion.TipoRetorno)
 		a.Generador.EmitQuad("GETRETURN", 0, 0, temp)
 		a.Generador.Operands.Push(codegen.Operand{Address: temp, Type: funcion.TipoRetorno})
 	}

@@ -15,7 +15,7 @@ import (
 func main() {
 
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./testdata/completo.patito") //o completo.patito
+	src, err := os.ReadFile("./testdata/fibonacci.patito") //o completo.patito
 	if err != nil {
 		panic(err)
 	}
@@ -54,5 +54,8 @@ func main() {
 	//Máquina virtual
 	vm := vm.NewVM(analizador.Generador.Quads, mem)
 	vm.Run()
+
+	//Mensaje final
+	fmt.Println("\nWUUUU Ejecución finalizada")
 
 }

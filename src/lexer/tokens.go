@@ -43,6 +43,8 @@ const (
 	MENOR_QUE
 	IGUAL
 	DIFERENTE
+	MAYOR_IGUAL
+	MENOR_IGUAL
 
 	//Delimitadores
 	ABRE_PAREN
@@ -124,6 +126,10 @@ func TokenKindString(kind TokenKind) string {
 		return "igual que"
 	case DIFERENTE:
 		return "diferente de"
+	case MAYOR_IGUAL:
+		return "mayor igual"
+	case MENOR_IGUAL:
+		return "menor igual"
 
 	case ASIGNACION:
 		return "asignación"

@@ -1,0 +1,29 @@
+programa fibonacci ;
+
+vars
+    n : entero ;
+    resultado : entero ;
+
+entero fib( x : entero ) {
+    vars
+        res : entero;
+    {
+        si ( x <= 1 )
+        {
+            res = x ;
+        }
+        sino
+        {
+            res = fib( x - 1 ) + fib( x - 2 ) ;
+        } ;
+    }
+    retornar res;
+} ;
+
+inicio
+{
+    n = 40 ;
+    resultado = fib( n ) ;
+    escribe( resultado ) ;
+}
+fin

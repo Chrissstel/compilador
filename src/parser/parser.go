@@ -363,7 +363,7 @@ func (p *Parser) parseExpresion() *ast.Expresion {
 	var op string
 	var der *ast.Exp
 	switch p.current().Kind {
-	case lexer.MAYOR_QUE, lexer.MENOR_QUE, lexer.DIFERENTE, lexer.IGUAL:
+	case lexer.MAYOR_QUE, lexer.MENOR_QUE, lexer.DIFERENTE, lexer.IGUAL, lexer.MAYOR_IGUAL, lexer.MENOR_IGUAL:
 		op = p.advance().Value
 		der = p.parseExp()
 	}

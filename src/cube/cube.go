@@ -23,7 +23,7 @@ func SemanticCube(left, right, op string) (string, error) {
 
 	//relacionales
 	//siempre es entero (mi booleano)
-	case ">", "<", "==", "!=":
+	case ">", "<", "==", "!=", ">=", "<=":
 		return "entero", nil
 	}
 
