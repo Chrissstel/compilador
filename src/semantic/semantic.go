@@ -145,7 +145,20 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 				"función '%s' debe retornar un valor de tipo '%s'",
 				f.ID, f.TipoRetorno,
 			))
+		}
+
+		ret := a.analizarExpresion(f.Retorno.Exp, f.ID) //analiza la expresión del retorno y obtiene su tipo
+		operat := a.Generador.Operands.Pop()            //obtiene el resultado de la expresión del retorno
+		if ret != f.TipoRetorno {
+			a.errores = append(a.errores, fmt.Sprintf(
+				"función '%s' retorna una expresión de tipo '%s' pero se esperaba '%s'",
+				f.ID, ret, f.TipoRetorno,
+			))
 		} else {
+			//Gen de Quad - emitir el cuádruplo de retorno
+			a.Generador.EmitQuad("RETURN", operat.Address, 0, 0)
+		}
+		/*else {
 			// verifica que el id exista en el scope actual, o en el global
 			varEntry, existe := a.Tabla.BuscarVar(f.Retorno.ID, f.ID)
 			if !existe {
@@ -164,8 +177,9 @@ func (a *Analizador) analizarFunc(f *ast.Func) {
 				//Gen de Quad - emitir el cuádruplo de retorno
 				a.Generador.EmitQuad("RETURN", varEntry.Direccion, 0, 0)
 			}
-		}
+		}*/
 	}
+
 	a.Generador.EmitQuad("ENDFUNC", 0, 0, 0)
 
 }

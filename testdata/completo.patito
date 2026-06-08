@@ -15,7 +15,7 @@ entero maximo( a : entero, b : entero ) {
             a = b ;
         } ;
     }
-    retornar a;
+    retornar (a + 1);
 } ;
 
 nula imprimirResultado( val : entero, msg : entero ) {

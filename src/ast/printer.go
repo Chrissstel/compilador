@@ -38,7 +38,7 @@ func (f *Func) print(prefix, childPrefix string) {
 	}
 	if f.Retorno != nil {
 		f.Cuerpo.print(childPrefix+"├── ", childPrefix+"│   ")
-		fmt.Printf("%s└── Retorno: %s\n", childPrefix, f.Retorno.ID)
+		fmt.Printf("%s└── Retorno: %s\n", childPrefix, f.Retorno.Exp)
 	} else {
 		f.Cuerpo.print(childPrefix+"└── ", childPrefix+"    ")
 	}

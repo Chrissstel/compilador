@@ -34,7 +34,7 @@ type Func struct {
 
 //AGREGUÉ LO DE RETORNAR
 type Retorno struct {
-	ID string //solo puede retornar ids
+	Exp *Expresion // para retornar más que ids
 }
 
 type Param struct {

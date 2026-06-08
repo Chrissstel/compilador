@@ -166,13 +166,13 @@ func (p *Parser) parseFuncs() *ast.Func {
 	}
 }
 
-// <RETORNO> → retornar id ; | ε
+// <RETORNO> → retornar <EXPRESION> ; | ε
 func (p *Parser) parseRetorno() *ast.Retorno {
 	if p.check(lexer.P_RETORNAR) {
 		p.advance()
-		id := p.expect(lexer.IDENTIFICADOR).Value
+		expr := p.parseExpresion()
 		p.expect(lexer.SEMICOLON)
-		return &ast.Retorno{ID: id}
+		return &ast.Retorno{Exp: expr}
 	}
 	return nil
 }

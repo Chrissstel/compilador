@@ -22,7 +22,7 @@ entero fib( x : entero ) {
 
 inicio
 {
-    n = 40 ;
+    n = 10 ;
     resultado = fib( n ) ;
     escribe( resultado ) ;
 }
