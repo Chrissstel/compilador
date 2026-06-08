@@ -187,6 +187,9 @@ func (a *Analizador) analizarEstatuto(e ast.Estatuto, scope string) { //estatuto
 		a.analizarCondicion(tree, scope)
 	case *ast.Ciclo:
 		a.analizarCiclo(tree, scope)
+	//SE AÑADE EL DOWHILE
+	case *ast.DoWhile:
+		a.analizarDoWhile(tree, scope)
 	case *ast.Llamada:
 		a.analizarLlamada(tree, scope)
 	case *ast.Imprime:
@@ -273,6 +276,27 @@ func (a *Analizador) analizarCiclo(n *ast.Ciclo, scope string) {
 	loopJump := a.Generador.Jumps.Pop() // índice de inicio
 	a.Generador.EmitQuad("GOTO", 0, 0, loopJump)
 	a.Generador.FillJump(exitJump, len(a.Generador.Quads))
+}
+
+func (a *Analizador) analizarDoWhile(n *ast.DoWhile, scope string) {
+	loopStart := len(a.Generador.Quads)
+	//guarda el inicio del ciclo para poder regresar
+	a.Generador.Jumps.Push(loopStart)
+
+	a.analizarCuerpo(n.Cuerpo, scope)
+
+	//checar que la expresión sea de tipo "booleana"
+	tipo := a.analizarExpresion(n.Expresion, scope)
+	if tipo != "entero" && tipo != "flotante" {
+		a.errores = append(a.errores, "la expresión en el ciclo debe ser de tipo 'booleano'")
+	}
+
+	//es donde se guardó el resultado de la condicion
+	cond := a.Generador.Operands.Pop()
+	//es el inicio del haz
+	loopJump := a.Generador.Jumps.Pop()
+	a.Generador.EmitQuad("GOTOT", cond.Address, 0, loopJump)
+
 }
 
 // tiene que regresar un tipo, aunque sea nula

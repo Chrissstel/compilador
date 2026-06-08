@@ -80,6 +80,12 @@ func printEstatuto(e Estatuto, parentPrefix string, last bool) {
 		printExpresionInline(n.Expresion)
 		n.Cuerpo.print(childPre+"└── ", childPre+"    ")
 
+	case *DoWhile:
+		fmt.Printf("%sHaz\n", pre)
+		n.Cuerpo.print(childPre+"├──", childPre+"│   ")
+		fmt.Printf("%s└── Cond: ", childPre)
+		printExpresionInline(n.Expresion)
+
 	case *Llamada:
 		fmt.Printf("%sLlamada: %s(%d args)\n", pre, n.ID, len(n.Args))
 		for i, arg := range n.Args {

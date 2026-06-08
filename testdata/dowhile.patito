@@ -1,0 +1,16 @@
+programa dowhile ;
+
+vars
+    x : entero ;
+
+inicio
+{
+    x = 5 ;
+    haz 
+    {
+        escribe( x ) ;
+        x = x - 1;
+    } mientras ( x > 0 );
+    
+}
+fin

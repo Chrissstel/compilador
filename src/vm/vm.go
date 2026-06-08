@@ -85,6 +85,8 @@ func (vm *VM) Run() {
 			vm.goTo(quad)
 		case "GOTOF":
 			vm.gotoF(quad)
+		case "GOTOT":
+			vm.goToT(quad)
 
 		case "ERA":
 			vm.era()
@@ -176,6 +178,14 @@ func (vm *VM) gotoF(quad codegen.Quadruple) {
 	// GOTOF 9003 0 25
 	cond := vm.mem.GetValue(quad.Left)
 	if cond.(int) == 0 {
+		vm.pos = quad.Result - 1 // -1 porque después del switch se hace vm.pos++
+	}
+}
+
+func (vm *VM) goToT(quad codegen.Quadruple) {
+	// GOTOT 9003 0 25
+	cond := vm.mem.GetValue(quad.Left)
+	if cond.(int) == 1 {
 		vm.pos = quad.Result - 1 // -1 porque después del switch se hace vm.pos++
 	}
 }

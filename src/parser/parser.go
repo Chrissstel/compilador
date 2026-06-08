@@ -223,11 +223,12 @@ func (p *Parser) parseCuerpo() *ast.Cuerpo {
 	return &ast.Cuerpo{Estatutos: estatutos}
 }
 
-// FIRST(<ESTATUTO>) = {id, si, mientras, escribe, [}
+// PARA DOWHILE SE AÑADIÓ EL HAZ
+// FIRST(<ESTATUTO>) = {id, si, mientras, escribe, haz, [}
 func (p *Parser) esInicioEstatuto() bool {
 	switch p.current().Kind {
 	case lexer.IDENTIFICADOR, lexer.P_SI, lexer.P_MIENTRAS,
-		lexer.P_ESCRIBE, lexer.ABRE_CORCHETE:
+		lexer.P_ESCRIBE, lexer.P_HAZ, lexer.ABRE_CORCHETE:
 		return true
 	}
 	return false
@@ -235,6 +236,7 @@ func (p *Parser) esInicioEstatuto() bool {
 
 //PARA LOS ESTATITOS
 
+// PARA DOWHILE    | <DOWHILE>
 // <ESTATUTO> → <ASIGNA> | <CONDICION> | <CICLO> | <LLAMADA> ; | <IMPRIME> | [ <LOOP_ESTATUTO> ]
 func (p *Parser) parseEstatuto() ast.Estatuto {
 	switch p.current().Kind {
@@ -252,6 +254,10 @@ func (p *Parser) parseEstatuto() ast.Estatuto {
 
 	case lexer.P_MIENTRAS:
 		return p.parseCiclo()
+
+	// PARA DOWHILE
+	case lexer.P_HAZ:
+		return p.parseDoWhile()
 
 	case lexer.P_ESCRIBE:
 		return p.parseImprime()
@@ -312,6 +318,18 @@ func (p *Parser) parseCiclo() *ast.Ciclo {
 	cuerpo := p.parseCuerpo()
 	p.expect(lexer.SEMICOLON)
 	return &ast.Ciclo{Expresion: expr, Cuerpo: cuerpo}
+}
+
+// <DOWHILE> → haz <CUERPO> mientras ( <EXPRESION> )
+func (p *Parser) parseDoWhile() *ast.DoWhile {
+	p.expect(lexer.P_HAZ)
+	cuerpo := p.parseCuerpo()
+	p.expect(lexer.P_MIENTRAS)
+	p.expect(lexer.ABRE_PAREN)
+	expr := p.parseExpresion()
+	p.expect(lexer.CIERRA_PAREN)
+	p.expect(lexer.SEMICOLON)
+	return &ast.DoWhile{Cuerpo: cuerpo, Expresion: expr}
 }
 
 // <LLAMADA> → id ( (<EXPRESION> (, <EXPRESION>)*)? )

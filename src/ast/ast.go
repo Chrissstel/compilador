@@ -92,6 +92,14 @@ type ImprimeItem struct {
 	Expr      *Expresion //si !EsLetrero
 }
 
+//SE AÑADE LA STRUCT DE DOWHILE
+type DoWhile struct {
+	Cuerpo    *Cuerpo
+	Expresion *Expresion
+}
+
+func (*DoWhile) estatutoNode() {}
+
 type BloqueEstatutos struct {
 	Estatutos []Estatuto
 }
