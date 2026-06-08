@@ -15,7 +15,7 @@ import (
 func main() {
 
 	//lee el archivo a un slice de bytes y un error
-	src, err := os.ReadFile("./testdata/fibonacci.patito") //o completo.patito
+	src, err := os.ReadFile("./testdata/00.patito") //o completo.patito
 	if err != nil {
 		panic(err)
 	}
